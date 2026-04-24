@@ -101,7 +101,7 @@ export default function App() {
                 )}
 
                 {analysisState.activeTab === 'graph' && (
-                  <EquivalenceGraph result={result} />
+                  <EquivalenceGraph />
                 )}
 
                 {analysisState.activeTab === 'conflicts' && (

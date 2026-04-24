@@ -6,7 +6,7 @@ type Props = {
   onComplete: (r: ReconciliationResult) => void
 }
 
-export default function UploadPanel({ state, onStateChange, onComplete }: Props) {
+export default function UploadPanel({ onStateChange, onComplete }: Props) {
   return (
     <div>
       <p className="text-slate-600 mb-4">Upload your schemas here</p>

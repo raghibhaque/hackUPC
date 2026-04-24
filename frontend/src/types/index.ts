@@ -90,16 +90,32 @@ export interface MigrationScaffold {
 
 // Complete reconciliation result
 export interface ReconciliationResult {
-  id: string;
-  timestamp: string;
-  sourceSchema: Schema;
-  targetSchema: Schema;
-  mappings: ColumnMapping[];
-  graph: EquivalenceGraph;
-  conflicts: ConflictReport;
-  migrationScaffold: MigrationScaffold;
-  overallConfidence: number;
-  status: 'completed' | 'processing' | 'failed';
+  id?: string;
+  timestamp?: string;
+  sourceSchema?: Schema;
+  targetSchema?: Schema;
+  summary: {
+    tables_matched: number;
+    tables_in_a: number;
+    tables_in_b: number;
+    average_confidence: number;
+    total_conflicts: number;
+    critical_conflicts: number;
+  };
+  table_mappings: Array<{
+    table_a: { name: string };
+    table_b: { name: string };
+    confidence: number;
+  }>;
+  unmatched_tables_a: string[];
+  unmatched_tables_b: string[];
+  migration_scaffold: string;
+  mappings?: ColumnMapping[];
+  graph?: EquivalenceGraph;
+  conflicts?: ConflictReport;
+  migrationScaffold?: MigrationScaffold;
+  overallConfidence?: number;
+  status?: 'completed' | 'processing' | 'failed';
   error?: string;
 }
 

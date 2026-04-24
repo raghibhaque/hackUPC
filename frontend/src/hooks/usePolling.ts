@@ -13,7 +13,7 @@ export function usePolling(
   options: UsePollingOptions = {}
 ) {
   const { interval = 2000, enabled = true, onError } = options
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
   const isPollingRef = useRef(enabled)
 
   useEffect(() => {
