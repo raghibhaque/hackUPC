@@ -1,10 +1,24 @@
 import { useRef, useState } from 'react'
+import { motion } from 'framer-motion'
+import type { Variants } from 'framer-motion'
+import { FileText, ArrowRight, Loader2, Database } from 'lucide-react'
 import type { ReconciliationResult } from '../../types'
 import { apiClient } from '../../lib/api'
+import { ElegantShape } from '../ui/shape-landing-hero'
+import { cn } from '@/lib/utils'
 
-type Props = {
-  onResult: (result: ReconciliationResult) => void
-}
+type Props = { onResult: (r: ReconciliationResult) => void }
+
+const EASE: [number, number, number, number] = [0.25, 0.4, 0.25, 1]
+
+const fadeUp = (i: number): Variants => ({
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, delay: 0.4 + i * 0.12, ease: EASE },
+  },
+})
 
 export default function UploadPanel({ onResult }: Props) {
   const [isLoading, setIsLoading] = useState(false)
@@ -22,177 +36,217 @@ export default function UploadPanel({ onResult }: Props) {
       onResult(await fn())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
       setIsLoading(false)
     }
   }
 
-  const handleRunDemo = () => run(() => apiClient.runDemo())
+  const handleDemo = () =>
+    run(() => apiClient.runDemo())
 
   const handleReconcile = () => {
     if (!sourceFile || !targetFile) return
     run(async () => {
-      const [srcName, tgtName] = await Promise.all([
+      const [a, b] = await Promise.all([
         apiClient.uploadFile(sourceFile),
         apiClient.uploadFile(targetFile),
       ])
-      return apiClient.reconcileFiles(srcName, tgtName)
+      return apiClient.reconcileFiles(a, b)
     })
   }
 
+  const canReconcile = sourceFile && targetFile && !isLoading
+
   return (
-    <div className="space-y-8">
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="mt-1 text-xs text-red-600 underline hover:text-red-700"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#06060e] flex flex-col items-center justify-center">
 
-      {/* Demo section */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Quick Demo
-        </h3>
-        <p className="text-sm text-slate-600">
-          Try a pre-loaded Ghost vs WordPress schema reconciliation — no files needed.
-        </p>
-        <button
-          onClick={handleRunDemo}
-          disabled={isLoading}
-          className={`w-full rounded-lg px-6 py-3 font-medium text-white transition-all ${
-            isLoading
-              ? 'cursor-not-allowed bg-blue-400'
-              : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
-          }`}
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-600/[0.04] via-transparent to-violet-600/[0.04]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.08),transparent)]" />
+
+      {/* Floating shapes */}
+      <ElegantShape delay={0.2} width={560} height={130} rotate={12}  gradient="from-indigo-500/[0.12]" className="left-[-8%] top-[18%]" />
+      <ElegantShape delay={0.4} width={420} height={100} rotate={-14} gradient="from-violet-500/[0.12]" className="right-[-4%] top-[65%]" />
+      <ElegantShape delay={0.3} width={260} height={70}  rotate={-7}  gradient="from-indigo-400/[0.1]"  className="left-[8%] bottom-[12%]" />
+      <ElegantShape delay={0.5} width={180} height={50}  rotate={22}  gradient="from-rose-400/[0.08]"   className="right-[18%] top-[10%]" />
+      <ElegantShape delay={0.6} width={120} height={36}  rotate={-20} gradient="from-cyan-400/[0.08]"   className="left-[28%] top-[6%]" />
+
+      {/* Subtle grid overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.015]"
+        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '60px 60px' }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-lg px-6 py-16">
+
+        {/* Badge */}
+        <motion.div
+          variants={fadeUp(0)} initial="hidden" animate="visible"
+          className="mb-10 flex justify-center"
         >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
-              </svg>
-              Running reconciliation…
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 backdrop-blur-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-400" />
             </span>
-          ) : (
-            'Run Demo (Ghost vs WordPress)'
-          )}
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div className="flex items-center gap-4">
-        <div className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">or upload your own</span>
-        <div className="h-px flex-1 bg-slate-200" />
-      </div>
-
-      {/* File upload section */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Custom Schemas
-        </h3>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Source schema */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Source Schema (.sql)
-            </label>
-            <input
-              ref={sourceRef}
-              type="file"
-              accept=".sql"
-              className="hidden"
-              onChange={e => setSourceFile(e.target.files?.[0] ?? null)}
-            />
-            <button
-              type="button"
-              onClick={() => sourceRef.current?.click()}
-              disabled={isLoading}
-              className={`flex w-full items-center gap-3 rounded-lg border-2 border-dashed px-4 py-4 text-left transition-colors ${
-                sourceFile
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
-              } disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              <svg
-                className={`h-6 w-6 shrink-0 ${sourceFile ? 'text-blue-500' : 'text-slate-400'}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <span className={`text-sm truncate ${sourceFile ? 'text-blue-700 font-medium' : 'text-slate-500'}`}>
-                {sourceFile ? sourceFile.name : 'Choose source .sql file…'}
-              </span>
-            </button>
+            <span className="text-xs font-medium tracking-widest text-white/50 uppercase">SchemaSync</span>
           </div>
+        </motion.div>
 
-          {/* Target schema */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Target Schema (.sql)
-            </label>
-            <input
-              ref={targetRef}
-              type="file"
-              accept=".sql"
-              className="hidden"
-              onChange={e => setTargetFile(e.target.files?.[0] ?? null)}
-            />
-            <button
-              type="button"
-              onClick={() => targetRef.current?.click()}
-              disabled={isLoading}
-              className={`flex w-full items-center gap-3 rounded-lg border-2 border-dashed px-4 py-4 text-left transition-colors ${
-                targetFile
-                  ? 'border-green-400 bg-green-50'
-                  : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
-              } disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              <svg
-                className={`h-6 w-6 shrink-0 ${targetFile ? 'text-green-500' : 'text-slate-400'}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <span className={`text-sm truncate ${targetFile ? 'text-green-700 font-medium' : 'text-slate-500'}`}>
-                {targetFile ? targetFile.name : 'Choose target .sql file…'}
-              </span>
-            </button>
-          </div>
-        </div>
+        {/* Heading */}
+        <motion.div variants={fadeUp(1)} initial="hidden" animate="visible" className="mb-4 text-center">
+          <h1 className="text-5xl font-bold leading-[1.1] tracking-tight">
+            <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+              Reconcile your
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-indigo-300 via-white/90 to-violet-300 bg-clip-text text-transparent">
+              database schemas
+            </span>
+          </h1>
+        </motion.div>
 
-        <button
-          onClick={handleReconcile}
-          disabled={!sourceFile || !targetFile || isLoading}
-          className={`w-full rounded-lg px-6 py-3 font-medium transition-all ${
-            !sourceFile || !targetFile || isLoading
-              ? 'cursor-not-allowed bg-slate-200 text-slate-400'
-              : 'bg-slate-800 text-white hover:bg-slate-900 active:scale-95'
-          }`}
+        <motion.p
+          variants={fadeUp(2)} initial="hidden" animate="visible"
+          className="mb-12 text-center text-sm leading-relaxed text-white/40"
         >
-          {isLoading ? 'Reconciling…' : 'Reconcile Schemas'}
-        </button>
+          ML-powered structural + semantic matching. Maps tables and columns across any two SQL schemas in seconds.
+        </motion.p>
+
+        {/* Error */}
+        <AnimateError error={error} onDismiss={() => setError(null)} />
+
+        {/* Demo CTA */}
+        <motion.div variants={fadeUp(3)} initial="hidden" animate="visible" className="mb-8">
+          <button
+            onClick={handleDemo}
+            disabled={isLoading}
+            className="group relative w-full overflow-hidden rounded-xl border border-indigo-500/30 bg-indigo-600/10 px-5 py-3.5 text-sm font-medium text-indigo-300 backdrop-blur-sm transition-all hover:border-indigo-400/50 hover:bg-indigo-600/20 hover:text-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Running reconciliation…
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <Database className="h-4 w-4" />
+                Run demo — Ghost vs WordPress
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            )}
+          </button>
+        </motion.div>
+
+        {/* Divider */}
+        <motion.div variants={fadeUp(4)} initial="hidden" animate="visible" className="mb-8 flex items-center gap-4">
+          <div className="h-px flex-1 bg-white/[0.06]" />
+          <span className="text-[11px] font-medium uppercase tracking-widest text-white/25">or upload your own</span>
+          <div className="h-px flex-1 bg-white/[0.06]" />
+        </motion.div>
+
+        {/* File upload */}
+        <motion.div variants={fadeUp(5)} initial="hidden" animate="visible" className="space-y-3">
+          <input ref={sourceRef} type="file" accept=".sql" className="hidden"
+            onChange={e => setSourceFile(e.target.files?.[0] ?? null)} />
+          <input ref={targetRef} type="file" accept=".sql" className="hidden"
+            onChange={e => setTargetFile(e.target.files?.[0] ?? null)} />
+
+          <div className="grid grid-cols-2 gap-3">
+            <FilePicker
+              label="Source schema"
+              file={sourceFile}
+              accent="indigo"
+              disabled={isLoading}
+              onClick={() => sourceRef.current?.click()}
+            />
+            <FilePicker
+              label="Target schema"
+              file={targetFile}
+              accent="violet"
+              disabled={isLoading}
+              onClick={() => targetRef.current?.click()}
+            />
+          </div>
+
+          <button
+            onClick={handleReconcile}
+            disabled={!canReconcile}
+            className={cn(
+              'w-full rounded-xl border px-5 py-3 text-sm font-medium transition-all',
+              canReconcile
+                ? 'border-white/[0.12] bg-white/[0.06] text-white hover:border-white/20 hover:bg-white/[0.1] active:scale-[0.99]'
+                : 'cursor-not-allowed border-white/[0.04] bg-white/[0.02] text-white/20'
+            )}
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Reconciling…
+              </span>
+            ) : (
+              'Reconcile schemas'
+            )}
+          </button>
+        </motion.div>
       </div>
+
+      {/* Bottom fade */}
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#06060e] to-transparent" />
     </div>
+  )
+}
+
+function FilePicker({
+  label, file, accent, disabled, onClick,
+}: {
+  label: string
+  file: File | null
+  accent: 'indigo' | 'violet'
+  disabled: boolean
+  onClick: () => void
+}) {
+  const colors = {
+    indigo: { active: 'border-indigo-500/40 bg-indigo-500/[0.07] text-indigo-300', icon: 'text-indigo-400' },
+    violet: { active: 'border-violet-500/40 bg-violet-500/[0.07] text-violet-300', icon: 'text-violet-400' },
+  }
+  const c = colors[accent]
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'flex flex-col items-center gap-2 rounded-xl border px-3 py-4 text-center transition-all',
+        file ? c.active : 'border-white/[0.07] bg-white/[0.03] text-white/30 hover:border-white/[0.12] hover:bg-white/[0.05]',
+        disabled && 'cursor-not-allowed opacity-50'
+      )}
+    >
+      <FileText className={cn('h-5 w-5', file ? c.icon : 'text-white/20')} />
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-wider opacity-60">{label}</p>
+        <p className="mt-0.5 max-w-full truncate text-xs font-medium">
+          {file ? file.name : '.sql file'}
+        </p>
+      </div>
+    </button>
+  )
+}
+
+function AnimateError({ error, onDismiss }: { error: string | null; onDismiss: () => void }) {
+  if (!error) return null
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="mb-6 overflow-hidden rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3"
+    >
+      <p className="text-sm text-rose-300">{error}</p>
+      <button onClick={onDismiss} className="mt-1 text-xs text-rose-400/60 underline hover:text-rose-400">
+        Dismiss
+      </button>
+    </motion.div>
   )
 }

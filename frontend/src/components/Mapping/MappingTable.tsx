@@ -1,182 +1,198 @@
 import { useState } from 'react'
-import type { ReconciliationResult } from '../../types'
-import ConfidenceBadge from '../shared/ConfidenceBadge'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronDown, ArrowRight, AlertTriangle } from 'lucide-react'
+import type { ReconciliationResult, TableMapping } from '../../types'
+import { cn } from '@/lib/utils'
 
-interface Props {
-  result: ReconciliationResult
-}
+interface Props { result: ReconciliationResult }
 
 export default function MappingTable({ result }: Props) {
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
-  const toggleRow = (index: number) => {
-    const newExpanded = new Set(expandedRows)
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index)
-    } else {
-      newExpanded.add(index)
-    }
-    setExpandedRows(newExpanded)
+  const toggle = (i: number) => {
+    const s = new Set(expanded)
+    s.has(i) ? s.delete(i) : s.add(i)
+    setExpanded(s)
   }
+
+  const { tables_matched, tables_in_a, average_confidence, total_conflicts } = result.summary
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 p-4">
-          <p className="text-sm text-blue-600 font-medium">Tables Matched</p>
-          <p className="text-3xl font-bold text-blue-900 mt-1">{result.summary.tables_matched}</p>
-          <p className="text-xs text-blue-700 mt-2">of {result.summary.tables_in_a}</p>
-        </div>
 
-        <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 border border-green-200 p-4">
-          <p className="text-sm text-green-600 font-medium">Avg Confidence</p>
-          <p className="text-3xl font-bold text-green-900 mt-1">{(result.summary.average_confidence * 100).toFixed(0)}%</p>
-          <p className="text-xs text-green-700 mt-2">
-            {result.summary.average_confidence >= 0.8 ? 'High quality' : 'Needs review'}
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 p-4">
-          <p className="text-sm text-yellow-600 font-medium">Conflicts Found</p>
-          <p className="text-3xl font-bold text-yellow-900 mt-1">{result.summary.total_conflicts}</p>
-          <p className="text-xs text-yellow-700 mt-2">
-            {result.summary.total_conflicts === 0 ? 'All clear' : `${result.summary.critical_conflicts} critical`}
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
-          <p className="text-sm text-slate-600 font-medium">Unmatched</p>
-          <p className="text-3xl font-bold text-slate-900 mt-1">{result.unmatched_tables_a.length}</p>
-          <p className="text-xs text-slate-700 mt-2">needs manual mapping</p>
-        </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="Tables matched" value={`${tables_matched} / ${tables_in_a}`} />
+        <Stat label="Avg confidence" value={`${(average_confidence * 100).toFixed(0)}%`} accent />
+        <Stat label="Conflicts" value={String(total_conflicts)} warn={total_conflicts > 0} />
       </div>
 
-      {/* Table Mappings */}
-      <div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Table Mappings</h3>
-
-        {result.table_mappings.length === 0 ? (
-          <div className="rounded-lg bg-slate-50 border border-slate-200 p-8 text-center">
-            <p className="text-slate-600">No table mappings found</p>
-          </div>
-        ) : (
-          <div className="space-y-2 border border-slate-200 rounded-lg overflow-hidden">
-            {result.table_mappings.map((mapping, index) => (
-              <div key={index}>
-                {/* Row */}
-                <button
-                  onClick={() => toggleRow(index)}
-                  className="w-full px-4 py-3 bg-white hover:bg-slate-50 transition-colors border-b border-slate-200 last:border-b-0 flex items-center justify-between text-left"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      {/* Source → Target */}
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">
-                          {mapping.table_a.name}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {mapping.table_a.columns.length} columns
-                        </p>
-                      </div>
-
-                      <div className="text-slate-400 font-bold">→</div>
-
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">
-                          {mapping.table_b.name}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {mapping.table_b.columns.length} columns
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Scores */}
-                  <div className="flex items-center gap-4 ml-4">
-                    <div className="text-right">
-                      <ConfidenceBadge
-                        level={mapping.confidence_label}
-                        value={mapping.confidence}
-                      />
-                      <div className="text-xs text-slate-500 mt-2 space-y-1">
-                        <p>Structural: {(mapping.structural_score * 100).toFixed(0)}%</p>
-                        <p>Semantic: {(mapping.semantic_score * 100).toFixed(0)}%</p>
-                      </div>
-                    </div>
-
-                    {/* Expand indicator */}
-                    <svg
-                      className={`h-5 w-5 text-slate-400 transition-transform ${
-                        expandedRows.has(index) ? 'rotate-180' : ''
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                      />
-                    </svg>
-                  </div>
-                </button>
-
-                {/* Expanded Column Mappings */}
-                {expandedRows.has(index) && (
-                  <div className="bg-slate-50 border-t border-slate-200 p-4">
-                    <p className="text-sm font-semibold text-slate-900 mb-3">
-                      Column Mappings ({mapping.column_mappings.length})
-                    </p>
-
-                    {mapping.column_mappings.length === 0 ? (
-                      <p className="text-sm text-slate-500">No column mappings</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {mapping.column_mappings.map((col, colIndex) => (
-                          <div key={colIndex} className="bg-white rounded p-3 border border-slate-200 text-sm">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-medium text-slate-900">
-                                {col.col_a.name}
-                                <span className="text-slate-400 mx-2">→</span>
-                                {col.col_b.name}
-                              </div>
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                {(col.confidence * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                            <div className="flex gap-4 text-xs text-slate-600">
-                              <span>{col.col_a.data_type.base_type} → {col.col_b.data_type.base_type}</span>
-                              <span className="text-slate-400">•</span>
-                              <span>{col.mapping_type}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Unmatched Tables */}
-      {result.unmatched_tables_a.length > 0 && (
-        <div className="rounded-lg bg-orange-50 border border-orange-200 p-4">
-          <p className="text-sm font-semibold text-orange-900 mb-2">
-            ⚠️ Unmatched Tables ({result.unmatched_tables_a.length})
-          </p>
-          <p className="text-sm text-orange-800">
-            These tables need manual mapping: {result.unmatched_tables_a.join(', ')}
-          </p>
+      {/* Mappings */}
+      {result.table_mappings.length === 0 ? (
+        <Empty message="No table mappings found" />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-white/[0.07]">
+          {result.table_mappings.map((m, i) => (
+            <Row key={i} mapping={m} index={i} isExpanded={expanded.has(i)} onToggle={() => toggle(i)} isLast={i === result.table_mappings.length - 1} />
+          ))}
         </div>
       )}
+
+      {/* Unmatched tables */}
+      {result.unmatched_tables_a.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-5 py-4"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400/80" />
+            <div>
+              <p className="text-sm font-medium text-amber-300/80">
+                {result.unmatched_tables_a.length} unmatched table{result.unmatched_tables_a.length !== 1 ? 's' : ''} — manual mapping needed
+              </p>
+              <p className="mt-1.5 flex flex-wrap gap-1.5">
+                {result.unmatched_tables_a.map(t => (
+                  <code key={t} className="rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300/70">
+                    {t}
+                  </code>
+                ))}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
+function Row({ mapping, index, isExpanded, onToggle, isLast }: {
+  mapping: TableMapping
+  index: number
+  isExpanded: boolean
+  onToggle: () => void
+  isLast: boolean
+}) {
+  const pct = Math.round(mapping.confidence * 100)
+  const label = mapping.confidence_label
+
+  return (
+    <div className={cn(!isLast && 'border-b border-white/[0.05]')}>
+      <motion.button
+        onClick={onToggle}
+        className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.03]"
+        initial={false}
+      >
+        {/* Index */}
+        <span className="w-5 shrink-0 text-xs text-white/20">{index + 1}</span>
+
+        {/* Source → Target */}
+        <div className="flex flex-1 items-center gap-3 min-w-0">
+          <TableName name={mapping.table_a.name} cols={mapping.table_a.columns.length} color="indigo" />
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/20" />
+          <TableName name={mapping.table_b.name} cols={mapping.table_b.columns.length} color="violet" />
+        </div>
+
+        {/* Confidence */}
+        <div className="flex shrink-0 items-center gap-3">
+          <ConfBar pct={pct} label={label} />
+          <ChevronDown className={cn('h-4 w-4 text-white/25 transition-transform', isExpanded && 'rotate-180')} />
+        </div>
+      </motion.button>
+
+      {/* Expanded column mappings */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/[0.05] bg-white/[0.015] px-5 pb-4 pt-3">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/25">
+                Column mappings · {mapping.column_mappings.length}
+              </p>
+              <div className="space-y-1.5">
+                {mapping.column_mappings.map((col, ci) => (
+                  <div key={ci} className="flex items-center gap-3 rounded-lg border border-white/[0.05] bg-white/[0.025] px-3 py-2 text-xs">
+                    <code className="text-indigo-300/80">{col.col_a.name}</code>
+                    <span className="text-white/[0.15]">·</span>
+                    <code className="text-white/30">{col.col_a.data_type.base_type}</code>
+                    <ArrowRight className="h-3 w-3 text-white/15 shrink-0" />
+                    <code className="text-violet-300/80">{col.col_b.name}</code>
+                    <span className="text-white/[0.15]">·</span>
+                    <code className="text-white/30">{col.col_b.data_type.base_type}</code>
+                    <span className="ml-auto text-white/25">{(col.confidence * 100).toFixed(0)}%</span>
+                    {col.conflicts.length > 0 && (
+                      <AlertTriangle className="h-3 w-3 text-amber-400/60" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function TableName({ name, cols, color }: { name: string; cols: number; color: 'indigo' | 'violet' }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <p className={cn('truncate text-sm font-medium', color === 'indigo' ? 'text-indigo-200/90' : 'text-violet-200/90')}>
+        {name}
+      </p>
+      <p className="text-xs text-white/25">{cols} cols</p>
+    </div>
+  )
+}
+
+function ConfBar({ pct, label }: { pct: number; label: string }) {
+  const colors = {
+    HIGH:   { bar: 'bg-emerald-400', text: 'text-emerald-300' },
+    MEDIUM: { bar: 'bg-amber-400',   text: 'text-amber-300'   },
+    LOW:    { bar: 'bg-rose-400',    text: 'text-rose-300'    },
+  }
+  const c = colors[label as keyof typeof colors] ?? colors.LOW
+
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-1 w-16 overflow-hidden rounded-full bg-white/[0.06]">
+        <motion.div
+          className={cn('h-full rounded-full', c.bar)}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+        />
+      </div>
+      <span className={cn('w-8 text-right text-xs font-semibold tabular-nums', c.text)}>
+        {pct}%
+      </span>
+    </div>
+  )
+}
+
+function Stat({ label, value, accent, warn }: { label: string; value: string; accent?: boolean; warn?: boolean }) {
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+      <p className="text-xs text-white/35">{label}</p>
+      <p className={cn(
+        'mt-1 text-xl font-bold tabular-nums',
+        warn ? 'text-amber-300' : accent ? 'text-indigo-300' : 'text-white/80'
+      )}>
+        {value}
+      </p>
+    </div>
+  )
+}
+
+function Empty({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] px-6 py-12 text-center">
+      <p className="text-sm text-white/25">{message}</p>
     </div>
   )
 }
