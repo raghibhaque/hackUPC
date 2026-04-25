@@ -22,8 +22,7 @@ export function useConflictPatterns(mappings: TableMapping[] | null | undefined)
       mapping.column_mappings?.forEach(col => {
         if (!col.conflicts || col.conflicts.length === 0) return
 
-        col.conflicts.forEach((conflict: any) => {
-          const conflictType = conflict.type || 'type_mismatch'
+        col.conflicts.forEach(() => {
           const sourceType = col.col_a.data_type?.base_type || 'unknown'
           const targetType = col.col_b.data_type?.base_type || 'unknown'
 
@@ -159,7 +158,6 @@ function isTypeConversionAutoResolvable(sourceType: string, targetType: string):
   const sourceIsDate = dateTypes.includes(source)
 
   const targetIsNumeric = numericTypes.includes(target)
-  const targetIsString = stringTypes.includes(target)
   const targetIsDate = dateTypes.includes(target)
 
   if (sourceIsString && (targetIsNumeric || targetIsDate)) return false
