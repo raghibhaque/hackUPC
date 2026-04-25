@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
-from backend.api.errors import ErrorCode, api_error, ParseErrorDetail
+from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDetail
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ExportResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
@@ -14,8 +14,15 @@ router = APIRouter(prefix="/export", tags=["export"])
 parser = SQLDDLParser()
 engine = ReconciliationEngine()
 
+_ERR = {
+    400: {"model": ErrorResponse, "description": "Parse error or invalid input"},
+    404: {"model": ErrorResponse, "description": "Resource not found"},
+    422: {"model": ErrorResponse, "description": "Request validation failed"},
+    500: {"model": ErrorResponse, "description": "Internal server error"},
+}
 
-@router.post("/sql", response_model=ExportResponse)
+
+@router.post("/sql", response_model=ExportResponse, responses=_ERR)
 async def export_migration_sql(req: ReconcileRequest):
     if not parser.can_parse(req.source_sql):
         api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
@@ -32,7 +39,7 @@ async def export_migration_sql(req: ReconcileRequest):
     )
 
 
-@router.get("/demo/sql")
+@router.get("/demo/sql", responses=_ERR)
 async def export_demo_sql():
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
@@ -50,7 +57,7 @@ async def export_demo_sql():
     )
 
 
-@router.post("/alter", response_model=ExportResponse)
+@router.post("/alter", response_model=ExportResponse, responses=_ERR)
 async def export_alter_migration_sql(req: ReconcileRequest):
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
@@ -62,7 +69,7 @@ async def export_alter_migration_sql(req: ReconcileRequest):
     )
 
 
-@router.get("/demo/alter")
+@router.get("/demo/alter", responses=_ERR)
 async def export_demo_alter_sql():
     ghost_sql = (DEMO_DIR / "ghost_schema.sql").read_text()
     wp_sql = (DEMO_DIR / "wordpress_schema.sql").read_text()
@@ -78,7 +85,7 @@ async def export_demo_alter_sql():
     )
 
 
-@router.post("/rollback", response_model=ExportResponse)
+@router.post("/rollback", response_model=ExportResponse, responses=_ERR)
 async def export_rollback_sql(req: ReconcileRequest):
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
@@ -90,7 +97,7 @@ async def export_rollback_sql(req: ReconcileRequest):
     )
 
 
-@router.get("/demo/rollback")
+@router.get("/demo/rollback", responses=_ERR)
 async def export_demo_rollback_sql():
     ghost_sql = (DEMO_DIR / "ghost_schema.sql").read_text()
     wp_sql = (DEMO_DIR / "wordpress_schema.sql").read_text()
@@ -118,7 +125,7 @@ def _messy_result(req: MessyDemoRequest):
     return engine.reconcile(source, target), req
 
 
-@router.get("/messy/sql", response_model=ExportResponse)
+@router.get("/messy/sql", response_model=ExportResponse, responses=_ERR)
 async def export_messy_sql(req: MessyDemoRequest = MessyDemoRequest()):
     result, r = _messy_result(req)
     return ExportResponse(
@@ -127,7 +134,7 @@ async def export_messy_sql(req: MessyDemoRequest = MessyDemoRequest()):
     )
 
 
-@router.get("/messy/alter", response_model=ExportResponse)
+@router.get("/messy/alter", response_model=ExportResponse, responses=_ERR)
 async def export_messy_alter_sql(req: MessyDemoRequest = MessyDemoRequest()):
     result, r = _messy_result(req)
     return ExportResponse(
@@ -136,7 +143,7 @@ async def export_messy_alter_sql(req: MessyDemoRequest = MessyDemoRequest()):
     )
 
 
-@router.get("/messy/rollback", response_model=ExportResponse)
+@router.get("/messy/rollback", response_model=ExportResponse, responses=_ERR)
 async def export_messy_rollback_sql(req: MessyDemoRequest = MessyDemoRequest()):
     result, r = _messy_result(req)
     return ExportResponse(

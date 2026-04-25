@@ -6,7 +6,7 @@ import re
 
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from backend.api.errors import ErrorCode, api_error, ParseErrorDetail, FormatErrorDetail
+from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDetail, FormatErrorDetail
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ReconcileResponse, JobSubmitResponse, JobStatusResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
@@ -18,6 +18,14 @@ from backend.config import DEMO_DIR, UPLOAD_DIR
 from backend.services.pipeline import create_job, get_job, run_reconciliation_job, stream_reconciliation
 
 router = APIRouter(prefix="/reconcile", tags=["reconcile"])
+
+# Shared OpenAPI error response declarations reused across every route.
+_ERR = {
+    400: {"model": ErrorResponse, "description": "Bad request — parse error, unsupported format, or invalid input"},
+    404: {"model": ErrorResponse, "description": "Resource not found"},
+    422: {"model": ErrorResponse, "description": "Request validation failed"},
+    500: {"model": ErrorResponse, "description": "Internal server error"},
+}
 _sql_parser = SQLDDLParser()
 _prisma_parser = PrismaParser()
 _json_parser = JSONSchemaParser()
@@ -46,7 +54,7 @@ def _strip_ext(filename: str) -> str:
 
 # ── Sync endpoints ───────────────────────────────────────────────────────────
 
-@router.post("/demo", response_model=ReconcileResponse)
+@router.post("/demo", response_model=ReconcileResponse, responses=_ERR)
 async def reconcile_demo(req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
@@ -59,7 +67,7 @@ async def reconcile_demo(req: DemoRequest = DemoRequest()):
     return ReconcileResponse(status="complete", result=result.to_dict())
 
 
-@router.post("/", response_model=ReconcileResponse)
+@router.post("/", response_model=ReconcileResponse, responses=_ERR)
 async def reconcile_raw(req: ReconcileRequest):
     if not parser.can_parse(req.source_sql):
         api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
@@ -72,7 +80,7 @@ async def reconcile_raw(req: ReconcileRequest):
     return ReconcileResponse(status="complete", result=result.to_dict())
 
 
-@router.post("/files", response_model=ReconcileResponse)
+@router.post("/files", response_model=ReconcileResponse, responses=_ERR)
 async def reconcile_files(source_file: str, target_file: str):
     source_path = UPLOAD_DIR / source_file
     target_path = UPLOAD_DIR / target_file
@@ -89,7 +97,7 @@ async def reconcile_files(source_file: str, target_file: str):
     return ReconcileResponse(status="complete", result=result.to_dict())
 
 
-@router.post("/demo/stats")
+@router.post("/demo/stats", responses=_ERR)
 async def reconcile_demo_stats(req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
@@ -136,7 +144,7 @@ async def reconcile_demo_stats(req: DemoRequest = DemoRequest()):
 
 # ── Async job endpoints ───────────────────────────────────────────────────────
 
-@router.post("/async", response_model=JobSubmitResponse)
+@router.post("/async", response_model=JobSubmitResponse, responses=_ERR)
 async def reconcile_async(req: ReconcileRequest, background_tasks: BackgroundTasks):
     if not parser.can_parse(req.source_sql):
         api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
@@ -150,7 +158,7 @@ async def reconcile_async(req: ReconcileRequest, background_tasks: BackgroundTas
     return JobSubmitResponse(job_id=job.id)
 
 
-@router.post("/async/demo", response_model=JobSubmitResponse)
+@router.post("/async/demo", response_model=JobSubmitResponse, responses=_ERR)
 async def reconcile_async_demo(background_tasks: BackgroundTasks, req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
@@ -164,7 +172,7 @@ async def reconcile_async_demo(background_tasks: BackgroundTasks, req: DemoReque
     return JobSubmitResponse(job_id=job.id)
 
 
-@router.post("/async/files", response_model=JobSubmitResponse)
+@router.post("/async/files", response_model=JobSubmitResponse, responses=_ERR)
 async def reconcile_async_files(source_file: str, target_file: str, background_tasks: BackgroundTasks):
     source_path = UPLOAD_DIR / source_file
     target_path = UPLOAD_DIR / target_file
@@ -182,7 +190,7 @@ async def reconcile_async_files(source_file: str, target_file: str, background_t
     return JobSubmitResponse(job_id=job.id)
 
 
-@router.get("/jobs/{job_id}", response_model=JobStatusResponse)
+@router.get("/jobs/{job_id}", response_model=JobStatusResponse, responses=_ERR)
 async def get_job_status(job_id: str):
     job = get_job(job_id)
     if job is None:
@@ -199,7 +207,7 @@ async def get_job_status(job_id: str):
 _SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 
 
-@router.post("/stream")
+@router.post("/stream", responses=_ERR)
 async def reconcile_stream(req: ReconcileRequest):
     if not parser.can_parse(req.source_sql):
         api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
@@ -211,7 +219,7 @@ async def reconcile_stream(req: ReconcileRequest):
     return StreamingResponse(stream_reconciliation(source, target), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 
-@router.post("/stream/demo")
+@router.post("/stream/demo", responses=_ERR)
 async def reconcile_stream_demo(req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
@@ -235,14 +243,14 @@ def _messy_schemas(req: MessyDemoRequest):
     return source, target
 
 
-@router.post("/messy", response_model=ReconcileResponse)
+@router.post("/messy", response_model=ReconcileResponse, responses=_ERR)
 async def reconcile_messy(req: MessyDemoRequest = MessyDemoRequest()):
     source, target = _messy_schemas(req)
     result = engine.reconcile(source, target)
     return ReconcileResponse(status="complete", result=result.to_dict())
 
 
-@router.post("/messy/stats")
+@router.post("/messy/stats", responses=_ERR)
 async def reconcile_messy_stats(req: MessyDemoRequest = MessyDemoRequest()):
     source, target = _messy_schemas(req)
     result = engine.reconcile(source, target)
@@ -281,7 +289,7 @@ async def reconcile_messy_stats(req: MessyDemoRequest = MessyDemoRequest()):
     }
 
 
-@router.post("/async/messy", response_model=JobSubmitResponse)
+@router.post("/async/messy", response_model=JobSubmitResponse, responses=_ERR)
 async def reconcile_async_messy(background_tasks: BackgroundTasks, req: MessyDemoRequest = MessyDemoRequest()):
     source, target = _messy_schemas(req)
     job = create_job()
@@ -289,13 +297,13 @@ async def reconcile_async_messy(background_tasks: BackgroundTasks, req: MessyDem
     return JobSubmitResponse(job_id=job.id)
 
 
-@router.post("/stream/messy")
+@router.post("/stream/messy", responses=_ERR)
 async def reconcile_stream_messy(req: MessyDemoRequest = MessyDemoRequest()):
     source, target = _messy_schemas(req)
     return StreamingResponse(stream_reconciliation(source, target), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 
-@router.post("/stream/files")
+@router.post("/stream/files", responses=_ERR)
 async def reconcile_stream_files(source_file: str, target_file: str):
     source_path = UPLOAD_DIR / source_file
     target_path = UPLOAD_DIR / target_file

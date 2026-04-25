@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
-from backend.api.errors import ErrorCode, api_error, FormatErrorDetail, FileSizeErrorDetail, ValidationErrorDetail
+from backend.api.errors import ErrorCode, ErrorResponse, api_error, FormatErrorDetail, FileSizeErrorDetail, ValidationErrorDetail
 from backend.api.models.responses import UploadResponse, DetectUploadResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.parsers.prisma import PrismaParser
@@ -13,6 +13,12 @@ from backend.core.parsers.json_schema import JSONSchemaParser
 from backend.config import UPLOAD_DIR, MAX_UPLOAD_BYTES, ALLOWED_EXTENSIONS
 
 router = APIRouter(prefix="/upload", tags=["upload"])
+
+_ERR = {
+    400: {"model": ErrorResponse, "description": "Validation, parse, format, or encoding error"},
+    413: {"model": ErrorResponse, "description": "File too large"},
+    422: {"model": ErrorResponse, "description": "Request validation failed"},
+}
 _sql_parser = SQLDDLParser()
 _prisma_parser = PrismaParser()
 _json_parser = JSONSchemaParser()
@@ -62,7 +68,7 @@ def _decode_utf8(content: bytes) -> str:
         api_error(400, ErrorCode.VALIDATION_ERROR, "File must be valid UTF-8 text")
 
 
-@router.post("/", response_model=UploadResponse)
+@router.post("/", response_model=UploadResponse, responses=_ERR)
 async def upload_schema(file: UploadFile = File(...)):
     if not file.filename:
         api_error(400, ErrorCode.VALIDATION_ERROR, "No filename provided")
@@ -92,7 +98,7 @@ async def upload_schema(file: UploadFile = File(...)):
     )
 
 
-@router.post("/detect", response_model=DetectUploadResponse)
+@router.post("/detect", response_model=DetectUploadResponse, responses=_ERR)
 async def detect_and_parse(file: UploadFile = File(...)):
     """Auto-detect schema format, parse, and return preview."""
     if not file.filename:
