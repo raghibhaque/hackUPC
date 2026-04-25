@@ -551,9 +551,14 @@ function TableName({
 
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <span key={i} className="bg-yellow-400/30 font-semibold text-yellow-200">
+        <motion.span
+          key={i}
+          initial={{ opacity: 0.7 }}
+          animate={{ opacity: 1 }}
+          className="bg-gradient-to-r from-yellow-400/40 to-yellow-300/30 font-semibold text-yellow-200 rounded px-1"
+        >
           {part}
-        </span>
+        </motion.span>
       ) : (
         part
       )
@@ -561,18 +566,21 @@ function TableName({
   }
 
   return (
-    <div className="min-w-0 flex-1">
+    <motion.div
+      className="min-w-0 flex-1"
+      whileHover={{ x: 2 }}
+    >
       <p
         className={cn(
-          'truncate text-sm font-medium',
-          color === 'indigo' ? 'text-indigo-200/90' : 'text-violet-200/90'
+          'truncate text-sm font-semibold',
+          color === 'indigo' ? 'text-indigo-200/95' : 'text-violet-200/95'
         )}
       >
         {renderHighlight()}
       </p>
 
-      <p className="text-xs text-white/25">{cols} cols</p>
-    </div>
+      <p className="text-xs font-medium text-white/35">{cols} columns</p>
+    </motion.div>
   )
 }
 
@@ -621,8 +629,22 @@ function Stat({
 
 function Empty({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] px-6 py-12 text-center">
-      <p className="text-sm text-white/25">{message}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.02] px-6 py-16 text-center"
+    >
+      <motion.div
+        animate={{ y: [0, -4, 0] }}
+        transition={{ duration: 3, repeat: Infinity }}
+        className="mx-auto mb-4 h-12 w-12 rounded-full border border-white/[0.1] flex items-center justify-center"
+      >
+        <span className="text-xl">🔍</span>
+      </motion.div>
+      <p className="text-sm font-medium text-white/50">{message}</p>
+      {message === 'No tables match your search' && (
+        <p className="mt-2 text-xs text-white/30">Try adjusting your search terms or filters</p>
+      )}
+    </motion.div>
   )
 }
