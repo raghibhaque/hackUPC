@@ -11,6 +11,16 @@ class UploadResponse(BaseModel):
     schema_preview: dict
 
 
+class DetectUploadResponse(BaseModel):
+    filename: str
+    detected_format: str
+    tables_found: int
+    table_names: list[str]
+    total_columns: int
+    total_foreign_keys: int
+    schema_preview: dict
+
+
 class ReconcileResponse(BaseModel):
     status: str
     job_id: Optional[str] = None

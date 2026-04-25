@@ -5,8 +5,8 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
-from backend.api.errors import ErrorCode, api_error
-from backend.api.models.responses import UploadResponse
+from backend.api.errors import ErrorCode, api_error, FormatErrorDetail, FileSizeErrorDetail, ValidationErrorDetail
+from backend.api.models.responses import UploadResponse, DetectUploadResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.parsers.prisma import PrismaParser
 from backend.core.parsers.json_schema import JSONSchemaParser
@@ -24,14 +24,17 @@ def _safe_filename(raw: str) -> str:
     name = Path(raw.replace("\\", "/")).name
     name = re.sub(r"[\x00/\\]", "", name)
     if not name:
-        raise api_error(400, ErrorCode.VALIDATION_ERROR, "Invalid filename")
+        api_error(400, ErrorCode.VALIDATION_ERROR, "Invalid filename")
     suffix = Path(name).suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
-        raise api_error(
+        api_error(
             400,
             ErrorCode.UNSUPPORTED_FORMAT,
             f"File type '{suffix}' not allowed",
-            detail={"allowed": sorted(ALLOWED_EXTENSIONS)},
+            detail=FormatErrorDetail(
+                supported=sorted(ALLOWED_EXTENSIONS),
+                filename=raw,
+            ),
         )
     return f"{uuid.uuid4().hex[:8]}_{name}"
 
@@ -40,10 +43,14 @@ async def _read_bounded(file: UploadFile) -> bytes:
     """Read up to MAX_UPLOAD_BYTES; reject anything larger."""
     content = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
-        raise api_error(
+        api_error(
             413,
             ErrorCode.FILE_TOO_LARGE,
             f"File too large (max {MAX_UPLOAD_BYTES // (1024 * 1024)} MB)",
+            detail=FileSizeErrorDetail(
+                max_bytes=MAX_UPLOAD_BYTES,
+                max_mb=MAX_UPLOAD_BYTES / (1024 * 1024),
+            ),
         )
     return content
 
@@ -52,20 +59,20 @@ def _decode_utf8(content: bytes) -> str:
     try:
         return content.decode("utf-8")
     except UnicodeDecodeError:
-        raise api_error(400, ErrorCode.VALIDATION_ERROR, "File must be valid UTF-8 text")
+        api_error(400, ErrorCode.VALIDATION_ERROR, "File must be valid UTF-8 text")
 
 
 @router.post("/", response_model=UploadResponse)
 async def upload_schema(file: UploadFile = File(...)):
     if not file.filename:
-        raise api_error(400, ErrorCode.VALIDATION_ERROR, "No filename provided")
+        api_error(400, ErrorCode.VALIDATION_ERROR, "No filename provided")
 
     safe_name = _safe_filename(file.filename)
     content = await _read_bounded(file)
     text = _decode_utf8(content)
 
     if not parser.can_parse(text):
-        raise api_error(
+        api_error(
             400,
             ErrorCode.PARSE_ERROR,
             "File does not contain valid SQL DDL (no CREATE TABLE found)",
@@ -85,11 +92,11 @@ async def upload_schema(file: UploadFile = File(...)):
     )
 
 
-@router.post("/detect")
+@router.post("/detect", response_model=DetectUploadResponse)
 async def detect_and_parse(file: UploadFile = File(...)):
     """Auto-detect schema format, parse, and return preview."""
     if not file.filename:
-        raise api_error(400, ErrorCode.VALIDATION_ERROR, "No filename provided")
+        api_error(400, ErrorCode.VALIDATION_ERROR, "No filename provided")
 
     safe_name = _safe_filename(file.filename)
     content = await _read_bounded(file)
@@ -109,11 +116,14 @@ async def detect_and_parse(file: UploadFile = File(...)):
         active_parser = _json_parser
 
     if active_parser is None:
-        raise api_error(
+        api_error(
             400,
             ErrorCode.UNSUPPORTED_FORMAT,
             "Could not detect schema format",
-            detail={"supported": ["sql_ddl", "prisma", "json_schema"]},
+            detail=FormatErrorDetail(
+                supported=["sql_ddl", "prisma", "json_schema"],
+                filename=file.filename,
+            ),
         )
 
     save_path = UPLOAD_DIR / safe_name
@@ -122,12 +132,12 @@ async def detect_and_parse(file: UploadFile = File(...)):
     schema_name = Path(file.filename).stem.replace("_schema", "")
     schema = active_parser.parse(text, schema_name=schema_name)
 
-    return {
-        "filename": safe_name,
-        "detected_format": detected_format,
-        "tables_found": len(schema.tables),
-        "table_names": schema.table_names,
-        "total_columns": sum(len(t.columns) for t in schema.tables),
-        "total_foreign_keys": sum(len(t.foreign_keys) for t in schema.tables),
-        "schema_preview": schema.to_dict(),
-    }
+    return DetectUploadResponse(
+        filename=safe_name,
+        detected_format=detected_format,
+        tables_found=len(schema.tables),
+        table_names=schema.table_names,
+        total_columns=sum(len(t.columns) for t in schema.tables),
+        total_foreign_keys=sum(len(t.foreign_keys) for t in schema.tables),
+        schema_preview=schema.to_dict(),
+    )

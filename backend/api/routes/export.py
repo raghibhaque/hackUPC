@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
-from backend.api.errors import ErrorCode, api_error
+from backend.api.errors import ErrorCode, api_error, ParseErrorDetail
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ExportResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
@@ -18,9 +18,9 @@ engine = ReconciliationEngine()
 @router.post("/sql", response_model=ExportResponse)
 async def export_migration_sql(req: ReconcileRequest):
     if not parser.can_parse(req.source_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
     if not parser.can_parse(req.target_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the target schema"))
 
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
@@ -37,7 +37,7 @@ async def export_demo_sql():
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
 
     source = parser.parse(ghost_path.read_text(), schema_name="ghost")
     target = parser.parse(wp_path.read_text(), schema_name="wordpress")
@@ -112,7 +112,7 @@ def _messy_result(req: MessyDemoRequest):
     legacy_path = DEMO_DIR / "messy_legacy_schema.sql"
     modern_path = DEMO_DIR / "messy_modern_schema.sql"
     if not legacy_path.exists() or not modern_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
     source = parser.parse(legacy_path.read_text(), schema_name=req.source_name)
     target = parser.parse(modern_path.read_text(), schema_name=req.target_name)
     return engine.reconcile(source, target), req

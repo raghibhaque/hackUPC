@@ -6,7 +6,7 @@ import re
 
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from backend.api.errors import ErrorCode, api_error
+from backend.api.errors import ErrorCode, api_error, ParseErrorDetail, FormatErrorDetail
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ReconcileResponse, JobSubmitResponse, JobStatusResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
@@ -32,11 +32,11 @@ def _detect_parser(text: str) -> BaseParser:
         return _prisma_parser
     if _json_parser.can_parse(text):
         return _json_parser
-    raise api_error(
+    api_error(
         400,
         ErrorCode.UNSUPPORTED_FORMAT,
         "Could not detect schema format",
-        detail={"supported": ["sql_ddl", "prisma", "json_schema"]},
+        detail=FormatErrorDetail(supported=["sql_ddl", "prisma", "json_schema"]),
     )
 
 
@@ -51,7 +51,7 @@ async def reconcile_demo(req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
 
     source_schema = parser.parse(ghost_path.read_text(), schema_name=req.source_name)
     target_schema = parser.parse(wp_path.read_text(), schema_name=req.target_name)
@@ -62,9 +62,9 @@ async def reconcile_demo(req: DemoRequest = DemoRequest()):
 @router.post("/", response_model=ReconcileResponse)
 async def reconcile_raw(req: ReconcileRequest):
     if not parser.can_parse(req.source_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
     if not parser.can_parse(req.target_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the target schema"))
 
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
@@ -77,9 +77,9 @@ async def reconcile_files(source_file: str, target_file: str):
     source_path = UPLOAD_DIR / source_file
     target_path = UPLOAD_DIR / target_file
     if not source_path.exists():
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Source file not found: {source_file}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Source file not found: {source_file}")
     if not target_path.exists():
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Target file not found: {target_file}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Target file not found: {target_file}")
 
     source_text = source_path.read_text()
     target_text = target_path.read_text()
@@ -94,7 +94,7 @@ async def reconcile_demo_stats(req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
 
     source_schema = parser.parse(ghost_path.read_text(), schema_name=req.source_name)
     target_schema = parser.parse(wp_path.read_text(), schema_name=req.target_name)
@@ -139,9 +139,9 @@ async def reconcile_demo_stats(req: DemoRequest = DemoRequest()):
 @router.post("/async", response_model=JobSubmitResponse)
 async def reconcile_async(req: ReconcileRequest, background_tasks: BackgroundTasks):
     if not parser.can_parse(req.source_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
     if not parser.can_parse(req.target_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the target schema"))
 
     source = parser.parse(req.source_sql, schema_name=req.source_name)
     target = parser.parse(req.target_sql, schema_name=req.target_name)
@@ -155,7 +155,7 @@ async def reconcile_async_demo(background_tasks: BackgroundTasks, req: DemoReque
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
 
     source = parser.parse(ghost_path.read_text(), schema_name=req.source_name)
     target = parser.parse(wp_path.read_text(), schema_name=req.target_name)
@@ -169,9 +169,9 @@ async def reconcile_async_files(source_file: str, target_file: str, background_t
     source_path = UPLOAD_DIR / source_file
     target_path = UPLOAD_DIR / target_file
     if not source_path.exists():
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Source file not found: {source_file}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Source file not found: {source_file}")
     if not target_path.exists():
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Target file not found: {target_file}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Target file not found: {target_file}")
 
     source_text = source_path.read_text()
     target_text = target_path.read_text()
@@ -186,7 +186,7 @@ async def reconcile_async_files(source_file: str, target_file: str, background_t
 async def get_job_status(job_id: str):
     job = get_job(job_id)
     if job is None:
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Job not found: {job_id}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Job not found: {job_id}")
     return JobStatusResponse(**job.to_dict())
 
 
@@ -202,9 +202,9 @@ _SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 @router.post("/stream")
 async def reconcile_stream(req: ReconcileRequest):
     if not parser.can_parse(req.source_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
     if not parser.can_parse(req.target_sql):
-        raise api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements")
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the target schema"))
 
     source = parser.parse(req.source_sql, schema_name=req.source_name)
     target = parser.parse(req.target_sql, schema_name=req.target_name)
@@ -216,7 +216,7 @@ async def reconcile_stream_demo(req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
 
     source = parser.parse(ghost_path.read_text(), schema_name=req.source_name)
     target = parser.parse(wp_path.read_text(), schema_name=req.target_name)
@@ -229,7 +229,7 @@ def _messy_schemas(req: MessyDemoRequest):
     legacy_path = DEMO_DIR / "messy_legacy_schema.sql"
     modern_path = DEMO_DIR / "messy_modern_schema.sql"
     if not legacy_path.exists() or not modern_path.exists():
-        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
     source = parser.parse(legacy_path.read_text(), schema_name=req.source_name)
     target = parser.parse(modern_path.read_text(), schema_name=req.target_name)
     return source, target
@@ -300,9 +300,9 @@ async def reconcile_stream_files(source_file: str, target_file: str):
     source_path = UPLOAD_DIR / source_file
     target_path = UPLOAD_DIR / target_file
     if not source_path.exists():
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Source file not found: {source_file}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Source file not found: {source_file}")
     if not target_path.exists():
-        raise api_error(404, ErrorCode.NOT_FOUND, f"Target file not found: {target_file}")
+        api_error(404, ErrorCode.NOT_FOUND, f"Target file not found: {target_file}")
 
     source_text = source_path.read_text()
     target_text = target_path.read_text()
