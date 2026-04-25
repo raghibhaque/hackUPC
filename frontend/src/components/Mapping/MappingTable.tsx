@@ -241,6 +241,46 @@ export default function MappingTable({ result }: Props) {
     setReviewed(newReviewed)
   }
 
+  const handleBulkMarkUnreviewed = () => {
+    const newReviewed = new Set(reviewed)
+    selectedForBulk.forEach(i => newReviewed.delete(i))
+    setReviewed(newReviewed)
+  }
+
+  const handleSelectAll = () => {
+    const allIndices = new Set(filtered.map((_, i) => i))
+    setSelectedForBulk(allIndices)
+  }
+
+  const handleSelectHighConfidence = () => {
+    const threshold = 0.8 // 80% confidence
+    const highConfidenceIndices = new Set(
+      filtered
+        .map((mapping, i) => (mapping.confidence >= threshold ? i : -1))
+        .filter(i => i !== -1)
+    )
+    setSelectedForBulk(highConfidenceIndices)
+  }
+
+  const handleSelectConflictFree = () => {
+    const conflictFreeIndices = new Set(
+      filtered
+        .map((mapping, i) => {
+          const hasConflict = (mapping.column_mappings || []).some(
+            cm => cm.conflicts && Array.isArray(cm.conflicts) && cm.conflicts.length > 0
+          )
+          return !hasConflict ? i : -1
+        })
+        .filter(i => i !== -1)
+    )
+    setSelectedForBulk(conflictFreeIndices)
+  }
+
+  const highConfidenceCount = filtered.filter(m => m.confidence >= 0.8).length
+  const conflictFreeCount = filtered.filter(m =>
+    !(m.column_mappings || []).some(cm => cm.conflicts && Array.isArray(cm.conflicts) && cm.conflicts.length > 0)
+  ).length
+
   const handleExportSelected = () => {
     const selectedMappings = filtered.filter((_, i) => selectedForBulk.has(i))
     const data = {
@@ -275,10 +315,15 @@ export default function MappingTable({ result }: Props) {
         <BulkActionBar
           selectedCount={selectedForBulk.size}
           totalCount={filtered.length}
+          highConfidenceCount={highConfidenceCount}
+          conflictFreeCount={conflictFreeCount}
           onMarkReviewed={handleBulkMarkReviewed}
+          onMarkUnreviewed={handleBulkMarkUnreviewed}
           onExportSelected={handleExportSelected}
           onClearSelection={() => setSelectedForBulk(new Set())}
-          
+          onSelectAll={handleSelectAll}
+          onSelectHighConfidence={handleSelectHighConfidence}
+          onSelectConflictFree={handleSelectConflictFree}
         />
         <div className="relative flex items-center gap-2">
           <TemplateManager
