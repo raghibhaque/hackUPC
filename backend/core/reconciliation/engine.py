@@ -79,6 +79,8 @@ class ReconciliationEngine:
                     source_column=src_col.name,
                     target_table=tgt_table.name,
                     target_column=tgt_col.name,
+                    source_col_type=src_col.col_type.value,
+                    target_col_type=tgt_col.col_type.value,
                     structural_score=col_score["structural_score"],
                     semantic_score=col_score["semantic_score"],
                     combined_score=col_score["combined_score"],

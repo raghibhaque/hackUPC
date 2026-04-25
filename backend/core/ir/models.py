@@ -213,6 +213,8 @@ class ColumnMapping:
     source_column: str
     target_table: str
     target_column: str
+    source_col_type: str = ""
+    target_col_type: str = ""
     structural_score: float = 0.0
     semantic_score: float = 0.0
     combined_score: float = 0.0
@@ -224,6 +226,8 @@ class ColumnMapping:
             "source_column": self.source_column,
             "target_table": self.target_table,
             "target_column": self.target_column,
+            "source_col_type": self.source_col_type,
+            "target_col_type": self.target_col_type,
             "structural_score": round(self.structural_score, 4),
             "semantic_score": round(self.semantic_score, 4),
             "combined_score": round(self.combined_score, 4),
