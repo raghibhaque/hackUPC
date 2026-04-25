@@ -1,13 +1,28 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ArrowRight, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ArrowRight, AlertTriangle, Search, X } from 'lucide-react'
 import type { ReconciliationResult, TableMapping } from '../../types'
 import { cn } from '@/lib/utils'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 
 interface Props { result: ReconciliationResult }
 
 export default function MappingTable({ result }: Props) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [search, setSearch] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  useKeyboardShortcuts({
+    onSearchFocus: () => searchRef.current?.focus(),
+    onEscape: () => setSearch(''),
+  })
+
+  const filtered = useMemo(() =>
+    search.trim() === '' ? result.table_mappings : result.table_mappings.filter(m =>
+      m.table_a.name.toLowerCase().includes(search.toLowerCase()) ||
+      m.table_b.name.toLowerCase().includes(search.toLowerCase())
+    ), [result.table_mappings, search]
+  )
 
   const toggle = (i: number) => {
     const s = new Set(expanded)
@@ -27,13 +42,37 @@ export default function MappingTable({ result }: Props) {
         <Stat label="Conflicts" value={String(total_conflicts)} warn={total_conflicts > 0} />
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+        <input
+          ref={searchRef}
+          type="text"
+          placeholder="Search tables…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full rounded-xl border border-white/[0.07] bg-white/[0.03] py-2.5 pl-10 pr-12 text-sm text-white/80 placeholder-white/25 transition-colors focus:border-white/[0.15] focus:bg-white/[0.06] focus:outline-none"
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium uppercase tracking-wider text-white/15">
+          Esc
+        </span>
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-10 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {/* Mappings */}
-      {result.table_mappings.length === 0 ? (
-        <Empty message="No table mappings found" />
+      {filtered.length === 0 ? (
+        <Empty message={search ? 'No tables match your search' : 'No table mappings found'} />
       ) : (
         <div className="overflow-hidden rounded-xl border border-white/[0.07]">
-          {result.table_mappings.map((m, i) => (
-            <Row key={i} mapping={m} index={i} isExpanded={expanded.has(i)} onToggle={() => toggle(i)} isLast={i === result.table_mappings.length - 1} />
+          {filtered.map((m, i) => (
+            <Row key={i} mapping={m} index={i} isExpanded={expanded.has(i)} onToggle={() => toggle(i)} isLast={i === filtered.length - 1} />
           ))}
         </div>
       )}

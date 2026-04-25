@@ -7,14 +7,16 @@ import EquivalenceGraph from './components/Graph/EquivalenceGraph'
 import MappingTable from './components/Mapping/MappingTable'
 import ConflictReport from './components/Conflicts/ConflictReport'
 import MigrationScaffold from './components/CodeGen/MigrationScaffold'
+import AnalyticsView from './components/Analytics/AnalyticsView'
 
-type Tab = 'mappings' | 'graph' | 'conflicts' | 'migration'
+type Tab = 'mappings' | 'analytics' | 'graph' | 'conflicts' | 'migration'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'mappings',  label: 'Mappings'  },
-  { id: 'graph',     label: 'Graph'     },
-  { id: 'conflicts', label: 'Conflicts' },
-  { id: 'migration', label: 'Migration' },
+  { id: 'mappings',   label: 'Mappings'   },
+  { id: 'analytics',  label: 'Analytics'  },
+  { id: 'graph',      label: 'Graph'      },
+  { id: 'conflicts',  label: 'Conflicts'  },
+  { id: 'migration',  label: 'Migration'  },
 ]
 
 export default function App() {
@@ -107,10 +109,11 @@ export default function App() {
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeTab === 'mappings'  && <MappingTable  result={result} />}
-                  {activeTab === 'graph'     && <EquivalenceGraph result={result} />}
-                  {activeTab === 'conflicts' && <ConflictReport result={result} />}
-                  {activeTab === 'migration' && <MigrationScaffold result={result} />}
+                  {activeTab === 'mappings'   && <MappingTable result={result} />}
+                  {activeTab === 'analytics'  && <AnalyticsView result={result} />}
+                  {activeTab === 'graph'      && <EquivalenceGraph result={result} />}
+                  {activeTab === 'conflicts'  && <ConflictReport result={result} />}
+                  {activeTab === 'migration'  && <MigrationScaffold result={result} />}
                 </motion.div>
               </AnimatePresence>
             </div>
