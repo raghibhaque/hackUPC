@@ -13,6 +13,7 @@ import { useProgressMetrics } from '../../hooks/useProgressMetrics'
 import { useConflictResolutions } from '../../hooks/useConflictResolutions'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import ProgressDashboard from './ProgressDashboard'
+import PerformanceMetrics from './PerformanceMetrics'
 import FilterPresetsUI from './FilterPresetsUI'
 import RulesUI from './RulesUI'
 import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
@@ -426,6 +427,9 @@ export default function MappingTable({ result }: Props) {
 
       {/* Progress Dashboard */}
       <ProgressDashboard metrics={metrics} />
+
+      {/* Performance Metrics */}
+      <PerformanceMetrics result={result} />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
