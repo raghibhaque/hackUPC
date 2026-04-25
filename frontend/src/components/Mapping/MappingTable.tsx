@@ -28,6 +28,7 @@ import HistoryPanel from './HistoryPanel'
 import ExportDrawer from './ExportDrawer'
 import TableStatisticsCard from './TableStatisticsCard'
 import SchemaSummaryCard from './SchemaSummaryCard'
+import StatisticsExportPanel from './StatisticsExportPanel'
 
 interface Props {
   result: ReconciliationResult
@@ -44,6 +45,7 @@ export default function MappingTable({ result }: Props) {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [showExport, setShowExport] = useState(false)
+  const [showStatisticsExport, setShowStatisticsExport] = useState(false)
   const [showRules, setShowRules] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [activePresetId, setActivePresetId] = useState<string | null>(null)
@@ -381,6 +383,19 @@ export default function MappingTable({ result }: Props) {
               📋 History {history.length > 0 && `(${history.length})`}
             </span>
           </motion.button>
+
+          <motion.button
+            type="button"
+            onClick={() => setShowStatisticsExport(!showStatisticsExport)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative overflow-hidden rounded-lg border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/60 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label={showStatisticsExport ? 'Hide statistics export' : 'Show statistics export'}
+          >
+            <span className="relative flex items-center gap-1.5">
+              📊 Export Stats
+            </span>
+          </motion.button>
           <motion.button
             type="button"
             onClick={() => setShowExport(true)}
@@ -439,6 +454,12 @@ export default function MappingTable({ result }: Props) {
       <ExportDrawer
         result={showExport ? result : null}
         onClose={() => setShowExport(false)}
+      />
+
+      <StatisticsExportPanel
+        result={result}
+        isOpen={showStatisticsExport}
+        onClose={() => setShowStatisticsExport(false)}
       />
 
       <AnimatePresence>
