@@ -20,6 +20,10 @@ def generate_migration_sql(
     lines.append("")
     lines.append("BEGIN;")
     lines.append("")
+    lines.append("-- ⚠ WARNING: Auto-generated migration scaffold")
+    lines.append("-- Review all mappings and type casts before executing")
+    lines.append("-- Back up your data before running this script")
+    lines.append("")
 
     for tm in result.table_mappings:
         src_table = source.get_table(tm.source_table)
@@ -71,6 +75,8 @@ def generate_migration_sql(
 
 def _generate_create_table(table, schema: Schema) -> list[str]:
     lines = []
+    lines.append(f"-- Drop if recreating (remove in production)")
+    lines.append(f"DROP TABLE IF EXISTS {table.name} CASCADE;")
     lines.append(f"CREATE TABLE IF NOT EXISTS {table.name} (")
 
     col_defs = []
@@ -137,6 +143,9 @@ def _generate_insert_select(
         else:
             src_exprs.append(cm.source_column)
 
+    lines.append(f"-- Migrate data: {tm.source_table} → {tm.target_table}")
+    lines.append(f"-- Confidence: {tm.combined_score:.0%}")
+    lines.append(f"-- ⚠ Review column mappings before running")
     lines.append(f"INSERT INTO {tm.target_table} (")
     lines.append(f"    {', '.join(tgt_cols)}")
     lines.append(f")")
@@ -147,7 +156,6 @@ def _generate_insert_select(
     lines.append(f"FROM {tm.source_table};")
 
     return lines
-
 
 def _col_type_to_sql(col) -> str:
     base = _col_type_to_sql_bare(col)
