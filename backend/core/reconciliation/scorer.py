@@ -15,11 +15,11 @@ from backend.core.analysis.semantic import (
 )
 
 
-STRUCTURAL_WEIGHT = 0.35
-SEMANTIC_WEIGHT = 0.65
+STRUCTURAL_WEIGHT = 0.30  # Reduced for better semantic matching
+SEMANTIC_WEIGHT = 0.70    # Increased for better name-based matching
 
-TABLE_MATCH_THRESHOLD = 0.35
-COLUMN_MATCH_THRESHOLD = 0.30
+TABLE_MATCH_THRESHOLD = 0.40  # Slightly raised to ensure quality matches
+COLUMN_MATCH_THRESHOLD = 0.35  # Raised from 0.30 for better column matching
 
 
 def confidence_tier(score: float) -> str:
@@ -82,7 +82,36 @@ def score_table_pair(table_a: Table, table_b: Table) -> dict:
     # Size penalty: drastically different column counts reduce confidence
     count_ratio = min(fp_a.column_count, fp_b.column_count) / max(fp_a.column_count, fp_b.column_count, 1)
     if count_ratio < 0.25:
-        combined *= 0.85
+        combined *= 0.90  # Softer penalty for intentionally different structures
+    elif count_ratio > 0.6:
+        combined = min(1.0, combined + 0.08)  # Bonus for similar sizes
+
+    # CMS Pattern Recognition Boost
+    # Common CMS tables have distinctive patterns that make them highly recognizable
+    cms_patterns = {
+        'users': ['user', 'account', 'member', 'person'],
+        'posts': ['post', 'article', 'content', 'entry'],
+        'tags': ['tag', 'category', 'term', 'label'],
+        'comments': ['comment', 'feedback', 'reply', 'remark'],
+        'roles': ['role', 'permission', 'access', 'group'],
+        'settings': ['setting', 'option', 'config', 'metadata', 'meta'],
+    }
+
+    table_a_name_lower = table_a.name.lower().replace('wp_', '').replace('_', '')
+    table_b_name_lower = table_b.name.lower().replace('wp_', '').replace('_', '')
+
+    for pattern_key, pattern_aliases in cms_patterns.items():
+        pattern_key_clean = pattern_key.replace('_', '')
+        # Check if both tables match the same CMS pattern
+        a_matches = pattern_key_clean in table_a_name_lower or any(
+            alias in table_a_name_lower for alias in pattern_aliases
+        )
+        b_matches = pattern_key_clean in table_b_name_lower or any(
+            alias in table_b_name_lower for alias in pattern_aliases
+        )
+        if a_matches and b_matches:
+            # Both tables are the same CMS entity type → strong boost
+            combined = min(1.0, combined + 0.12)
 
     reasons = []
     if semantic >= 0.9:

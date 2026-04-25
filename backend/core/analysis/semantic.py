@@ -98,6 +98,26 @@ SYNONYMS: dict[str, str] = {
     "country": "country", "ctry": "country", "cntry": "country",
     "state": "state", "province": "state", "region": "state",
     "st": "state",
+    # WordPress specific
+    "wp_": "", "post_author": "user", "post_parent": "parent",
+    "post_date": "created", "post_date_gmt": "created",
+    "post_modified": "updated", "post_modified_gmt": "updated",
+    "post_content": "content", "post_title": "title",
+    "post_excerpt": "content", "post_status": "status",
+    "post_name": "slug", "post_type": "type",
+    "comment_author": "author", "comment_post_id": "post",
+    "comment_date": "created", "comment_content": "content",
+    "comment_status": "status", "comment_approved": "status",
+    # Ghost specific
+    "feature_image": "image", "og_image": "image",
+    "twitter_image": "image", "cover_image": "image",
+    "mobiledoc": "content", "plaintext": "content",
+    "author_id": "user", "member_id": "user",
+    # Generic CMS
+    "featured": "featured", "publish": "status",
+    "reply_to": "parent", "sender_name": "author",
+    "sender_email": "email", "subscribed": "status",
+    "sort_order": "order", "menu_order": "order",
     "zip": "postal", "postcode": "postal", "postal_code": "postal",
     "line": "line", "ln": "line",
     # Shipping
