@@ -5,7 +5,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { ReconciliationResult, TableMapping } from '../../types'
 import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
-import { useTheme } from '../../hooks/useTheme'
 import { useTemplates } from '../../hooks/useTemplates'
 import { useHistory } from '../../hooks/useHistory'
 import { useFilterPresets } from '../../hooks/useFilterPresets'
@@ -25,8 +24,6 @@ interface Props {
 }
 
 export default function MappingTable({ result }: Props) {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [search, setSearch] = useState('')
   const [selectedMapping, setSelectedMapping] = useState<TableMapping | null>(null)
@@ -281,7 +278,7 @@ export default function MappingTable({ result }: Props) {
           onMarkReviewed={handleBulkMarkReviewed}
           onExportSelected={handleExportSelected}
           onClearSelection={() => setSelectedForBulk(new Set())}
-          isDark={isDark}
+          
         />
         <div className="relative flex items-center gap-2">
           <TemplateManager
@@ -289,18 +286,14 @@ export default function MappingTable({ result }: Props) {
             onSave={handleSaveTemplate}
             onLoad={handleLoadTemplate}
             onDelete={handleDeleteTemplate}
-            isDark={isDark}
+            
           />
           <motion.button
             type="button"
             onClick={() => setShowHistory(!showHistory)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`group relative overflow-hidden rounded-lg border px-3 py-2 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-              isDark
-                ? 'border-white/[0.1] bg-white/[0.05] text-white/60 hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80'
-                : 'border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-400 hover:bg-slate-200 hover:text-slate-800'
-            }`}
+            className="group relative overflow-hidden rounded-lg border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/60 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-label={showHistory ? 'Hide history panel' : 'Show history panel'}
           >
             <span className="relative flex items-center gap-1.5">
@@ -312,11 +305,7 @@ export default function MappingTable({ result }: Props) {
             onClick={() => setShowExport(true)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`group relative overflow-hidden rounded-lg border px-3 py-2 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-              isDark
-                ? 'border-white/[0.1] bg-white/[0.05] text-white/60 hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80'
-                : 'border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-400 hover:bg-slate-200 hover:text-slate-800'
-            }`}
+            className="group relative overflow-hidden rounded-lg border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/60 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-label="Export migration files"
           >
             <span className="relative flex items-center gap-1.5">
@@ -343,24 +332,24 @@ export default function MappingTable({ result }: Props) {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Stat label="Tables matched" value={`${tables_matched} / ${tables_in_a}`} isDark={isDark} />
+        <Stat label="Tables matched" value={`${tables_matched} / ${tables_in_a}`}  />
         <Stat
           label="Avg confidence"
           value={`${(average_confidence * 100).toFixed(0)}%`}
           accent
-          isDark={isDark}
+          
         />
         <Stat
           label="Conflicts"
           value={String(total_conflicts)}
           warn={total_conflicts > 0}
-          isDark={isDark}
+          
         />
       </div>
 
       <div className="relative">
         <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
-          isDark ? 'text-white/20' : 'text-slate-400'
+          'text-white/20'
         }`} />
         <input
           ref={searchRef}
@@ -368,15 +357,11 @@ export default function MappingTable({ result }: Props) {
           placeholder="Search tables…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className={`w-full rounded-xl border py-2.5 pl-10 pr-12 text-sm transition-colors focus:outline-none ${
-            isDark
-              ? 'border-white/[0.07] bg-white/[0.03] text-white/80 placeholder-white/25 focus:border-white/[0.15] focus:bg-white/[0.06]'
-              : 'border-slate-300 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-slate-400 focus:bg-white'
-          }`}
+          className="w-full rounded-xl border border-white/[0.07] bg-white/[0.03] py-2.5 pl-10 pr-12 text-sm text-white/80 placeholder-white/25 transition-colors focus:border-white/[0.15] focus:bg-white/[0.06] focus:outline-none"
         />
 
         <span className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium uppercase tracking-wider ${
-          isDark ? 'text-white/15' : 'text-slate-400'
+          'text-white/15'
         }`}>
           Esc
         </span>
@@ -386,7 +371,7 @@ export default function MappingTable({ result }: Props) {
             type="button"
             onClick={() => setSearch('')}
             className={`absolute right-10 top-1/2 -translate-y-1/2 transition-colors ${
-              isDark ? 'text-white/20 hover:text-white/40' : 'text-slate-400 hover:text-slate-600'
+              'text-white/20 hover:text-white/40'
             }`}
           >
             <X className="h-4 w-4" />
@@ -399,15 +384,11 @@ export default function MappingTable({ result }: Props) {
         onChange={setMinConfidence}
         mappingsCount={result.table_mappings?.length ?? 0}
         filteredCount={filtered.length}
-        isDark={isDark}
+        
       />
 
-      <div className={`rounded-xl border p-4 ${
-        isDark
-          ? 'border-white/[0.07] bg-white/[0.03]'
-          : 'border-slate-300 bg-slate-100'
-      }`}>
-        <h3 className={`mb-3 text-xs font-semibold ${isDark ? 'text-white/40' : 'text-slate-600'}`}>
+      <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
+        <h3 className="mb-3 text-xs font-semibold text-white/40">
           Filter Presets
         </h3>
         <FilterPresetsUI
@@ -416,7 +397,7 @@ export default function MappingTable({ result }: Props) {
           onApplyPreset={handleApplyPreset}
           onSavePreset={handleSaveFilterPreset}
           onDeletePreset={handleDeleteFilterPreset}
-          isDark={isDark}
+          
         />
       </div>
 
@@ -431,18 +412,14 @@ export default function MappingTable({ result }: Props) {
             <HistoryPanel
               history={history}
               onClearHistory={clearHistory}
-              isDark={isDark}
+              
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className={`rounded-xl border p-4 ${
-        isDark
-          ? 'border-white/[0.07] bg-white/[0.03]'
-          : 'border-slate-300 bg-slate-100'
-      }`}>
-        <h3 className={`mb-2 text-xs font-semibold ${isDark ? 'text-white/40' : 'text-slate-600'}`}>
+      <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
+        <h3 className="mb-2 text-xs font-semibold text-white/40">
           Mapping Review Checklist
         </h3>
 
@@ -453,23 +430,19 @@ export default function MappingTable({ result }: Props) {
                 type="checkbox"
                 checked={reviewed.has(i)}
                 onChange={() => toggleReviewed(i)}
-                className={`h-4 w-4 rounded accent-indigo-500 ${
-                  isDark
-                    ? 'border border-white/15 bg-white/5'
-                    : 'border border-slate-400 bg-slate-200'
-                }`}
+                className="h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500"
                 id={`reviewed-${i}`}
               />
 
               <label
                 htmlFor={`reviewed-${i}`}
-                className={`cursor-pointer text-xs ${isDark ? 'text-white/70' : 'text-slate-700'}`}
+                className="cursor-pointer text-xs text-white/70"
               >
                 {m.table_a.name} → {m.table_b.name}
               </label>
 
               {reviewed.has(i) && (
-                <span className={`ml-1 text-xs ${isDark ? 'text-green-400' : 'text-green-600'}`}>Reviewed</span>
+                <span className={`ml-1 text-xs ${'text-green-400'}`}>Reviewed</span>
               )}
             </li>
           ))}
@@ -477,10 +450,10 @@ export default function MappingTable({ result }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <Empty message={search ? 'No tables match your search' : 'No table mappings found'} isDark={isDark} />
+        <Empty message={search ? 'No tables match your search' : 'No table mappings found'}  />
       ) : (
         <div className={`overflow-hidden rounded-xl border ${
-          isDark ? 'border-white/[0.07]' : 'border-slate-300'
+          'border-white/[0.07]'
         }`}>
           {shouldVirtualize ? (
             <div
@@ -527,7 +500,7 @@ export default function MappingTable({ result }: Props) {
                         }}
                         isFocused={focusedIndex === i}
                         onFocus={() => setFocusedIndex(i)}
-                        isDark={isDark}
+                        
                       />
                     </div>
                   )
@@ -563,7 +536,7 @@ export default function MappingTable({ result }: Props) {
                   }}
                   isFocused={focusedIndex === i}
                   onFocus={() => setFocusedIndex(i)}
-                  isDark={isDark}
+                  
                 />
               </div>
             ))
@@ -575,21 +548,13 @@ export default function MappingTable({ result }: Props) {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-xl border px-5 py-4 ${
-            isDark
-              ? 'border-amber-500/20 bg-amber-500/[0.06]'
-              : 'border-amber-300 bg-amber-100'
-          }`}
+          className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-5 py-4"
         >
           <div className="flex items-start gap-3">
-            <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${
-              isDark ? 'text-amber-400/80' : 'text-amber-600'
-            }`} />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400/80" />
 
             <div>
-              <p className={`text-sm font-medium ${
-                isDark ? 'text-amber-300/80' : 'text-amber-700'
-              }`}>
+              <p className="text-sm font-medium text-amber-300/80">
                 {result.unmatched_tables_a.length} unmatched table
                 {result.unmatched_tables_a.length !== 1 ? 's' : ''} — manual mapping needed
               </p>
@@ -598,11 +563,7 @@ export default function MappingTable({ result }: Props) {
                 {result.unmatched_tables_a.map((t) => (
                   <code
                     key={t}
-                    className={`rounded-md border px-2 py-0.5 text-xs ${
-                      isDark
-                        ? 'border-amber-500/20 bg-amber-500/10 text-amber-300/70'
-                        : 'border-amber-300 bg-amber-50 text-amber-800'
-                    }`}
+                    className="rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300/70"
                   >
                     {t}
                   </code>
@@ -631,7 +592,6 @@ function Row({
   onBulkToggle,
   isFocused = false,
   onFocus,
-  isDark = true,
 }: {
   mapping: TableMapping
   index: number
@@ -647,7 +607,6 @@ function Row({
   onBulkToggle?: () => void
   isFocused?: boolean
   onFocus?: () => void
-  isDark?: boolean
 }) {
   const sourceTypes = Array.from(
     new Set(
@@ -668,21 +627,19 @@ function Row({
   return (
     <div className={cn(
       'transition-all',
-      !isLast && isDark ? 'border-b border-white/[0.05]' : !isLast ? 'border-b border-slate-300' : '',
-      reviewed && isDark && 'bg-gradient-to-r from-green-900/[0.15] to-transparent',
-      reviewed && !isDark && 'bg-gradient-to-r from-green-100 to-transparent',
-      isFocused && isDark && 'ring-1 ring-indigo-400/50 bg-white/[0.06]',
-      isFocused && !isDark && 'ring-1 ring-indigo-500/50 bg-slate-200'
+      !isLast && 'border-b border-white/[0.05]',
+      reviewed && 'bg-gradient-to-r from-green-900/[0.15] to-transparent',
+      isFocused && 'ring-1 ring-indigo-400/50 bg-white/[0.06]'
     )}>
       <motion.button
         type="button"
         onClick={onToggle}
         onMouseEnter={onFocus}
         onMouseDown={onFocus}
-        whileHover={{ backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)' }}
+        whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
         className={cn(
           'group flex w-full items-center gap-4 px-5 py-4 text-left transition-all',
-          isDark ? '' : 'text-slate-900'
+          ''
         )}
         initial={false}
       >
@@ -775,7 +732,7 @@ function Row({
             onViewDetails()
           }}
           className={`ml-1 p-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-            isDark ? 'text-white/40 hover:text-white/70' : 'text-slate-500 hover:text-slate-700'
+            'text-white/40 hover:text-white/70'
           }`}
           aria-label="View column details"
         >
@@ -791,7 +748,7 @@ function Row({
             onViewDiff()
           }}
           className={`ml-1 p-1 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-            isDark ? 'text-white/40 hover:text-white/70' : 'text-slate-500 hover:text-slate-700'
+            'text-white/40 hover:text-white/70'
           }`}
           aria-label="Compare source vs target"
         >
@@ -957,34 +914,24 @@ function Stat({
   value,
   accent,
   warn,
-  isDark,
 }: {
   label: string
   value: string
   accent?: boolean
   warn?: boolean
-  isDark?: boolean
 }) {
   const baseClass = accent
     ? 'border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-indigo-600/5'
     : warn
       ? 'border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5'
-      : isDark
-        ? 'border-white/[0.08] bg-gradient-to-br from-white/[0.06] to-white/[0.02]'
-        : 'border-slate-300 bg-gradient-to-br from-slate-100 to-slate-50'
+      : 'border-white/[0.08] bg-gradient-to-br from-white/[0.06] to-white/[0.02]'
 
-  const labelClass = isDark ? 'text-white/40' : 'text-slate-500'
-  const valueClass = isDark
-    ? warn
-      ? 'text-amber-300'
-      : accent
-        ? 'text-indigo-300'
-        : 'text-white/90'
-    : warn
-      ? 'text-amber-600'
-      : accent
-        ? 'text-indigo-600'
-        : 'text-slate-900'
+  const labelClass = 'text-white/40'
+  const valueClass = warn
+    ? 'text-amber-300'
+    : accent
+      ? 'text-indigo-300'
+      : 'text-white/90'
 
   return (
     <motion.div
@@ -1003,29 +950,23 @@ function Stat({
   )
 }
 
-function Empty({ message, isDark }: { message: string; isDark?: boolean }) {
+function Empty({ message }: { message: string }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl border px-6 py-16 text-center ${
-        isDark
-          ? 'border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.02]'
-          : 'border-slate-300 bg-gradient-to-br from-slate-100 to-slate-50'
-      }`}
+      className="rounded-xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.02] px-6 py-16 text-center"
     >
       <motion.div
         animate={{ y: [0, -4, 0] }}
         transition={{ duration: 3, repeat: Infinity }}
-        className={`mx-auto mb-4 h-12 w-12 rounded-full border flex items-center justify-center ${
-          isDark ? 'border-white/[0.1]' : 'border-slate-400'
-        }`}
+        className="mx-auto mb-4 h-12 w-12 rounded-full border border-white/[0.1] flex items-center justify-center"
       >
         <span className="text-xl">🔍</span>
       </motion.div>
-      <p className={`text-sm font-medium ${isDark ? 'text-white/50' : 'text-slate-700'}`}>{message}</p>
+      <p className="text-sm font-medium text-white/50">{message}</p>
       {message === 'No tables match your search' && (
-        <p className={`mt-2 text-xs ${isDark ? 'text-white/30' : 'text-slate-500'}`}>Try adjusting your search terms or filters</p>
+        <p className="mt-2 text-xs text-white/30">Try adjusting your search terms or filters</p>
       )}
     </motion.div>
   )
