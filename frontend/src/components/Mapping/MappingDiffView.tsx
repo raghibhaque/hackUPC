@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, AlertCircle } from 'lucide-react'
 import type { TableMapping } from '../../types'
+import { useTheme } from '../../hooks/useTheme'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import { cn } from '@/lib/utils'
 
@@ -10,6 +11,9 @@ interface Props {
 }
 
 export default function MappingDiffView({ mapping, onClose }: Props) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   if (!mapping) return null
 
   const sourceColumns = mapping.table_a.columns || []
@@ -34,7 +38,9 @@ export default function MappingDiffView({ mapping, onClose }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            className={`fixed inset-0 z-40 backdrop-blur-sm ${
+              isDark ? 'bg-black/50' : 'bg-black/30'
+            }`}
           />
 
           {/* Modal */}
@@ -46,13 +52,25 @@ export default function MappingDiffView({ mapping, onClose }: Props) {
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-5xl rounded-xl border border-white/[0.12] bg-[#0a0a12]/95 backdrop-blur-sm shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              className={`w-full max-w-5xl rounded-xl border backdrop-blur-sm shadow-2xl max-h-[90vh] overflow-hidden flex flex-col ${
+                isDark
+                  ? 'border-white/[0.12] bg-[#0a0a12]/95'
+                  : 'border-slate-300 bg-white/95'
+              }`}
             >
               {/* Header */}
-              <div className="sticky top-0 border-b border-white/[0.07] bg-[#06060e]/80 px-6 py-4 flex items-center justify-between">
+              <div className={`sticky top-0 border-b px-6 py-4 flex items-center justify-between ${
+                isDark
+                  ? 'border-white/[0.07] bg-[#06060e]/80'
+                  : 'border-slate-200 bg-slate-50/80'
+              }`}>
                 <div>
-                  <h2 className="text-lg font-semibold text-white/80">Schema Comparison</h2>
-                  <p className="mt-1 text-xs text-white/40">
+                  <h2 className={`text-lg font-semibold ${
+                    isDark ? 'text-white/80' : 'text-slate-900'
+                  }`}>Schema Comparison</h2>
+                  <p className={`mt-1 text-xs ${
+                    isDark ? 'text-white/40' : 'text-slate-600'
+                  }`}>
                     {mapping.table_a.name} → {mapping.table_b.name}
                   </p>
                 </div>
