@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Download, Copy, Check } from 'lucide-react'
+import { X, Download, Copy, Check, FileText } from 'lucide-react'
 import { useState } from 'react'
 import type { ReconciliationResult } from '../../types'
-import { useTheme } from '../../hooks/useTheme'
 import { EXPORT_FORMATS } from '../../lib/exportFormats'
+import { generatePDFReport } from '../../lib/pdfReportGenerator'
+import { showToast } from '../../lib/toast'
 
 interface Props {
   result: ReconciliationResult | null
@@ -11,8 +12,6 @@ interface Props {
 }
 
 export default function ExportDrawer({ result, onClose }: Props) {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   if (!result) return null
@@ -29,6 +28,22 @@ export default function ExportDrawer({ result, onClose }: Props) {
     a.download = format.filename
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleDownloadPDF = () => {
+    try {
+      const blob = generatePDFReport(result)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'schemasync-reconciliation-report.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+      showToast('PDF report downloaded successfully', 'success')
+    } catch (error) {
+      showToast('Failed to generate PDF report', 'error')
+      console.error('PDF generation error:', error)
+    }
   }
 
   const handleCopy = (formatId: string) => {
@@ -51,9 +66,7 @@ export default function ExportDrawer({ result, onClose }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className={`fixed inset-0 z-40 backdrop-blur-sm ${
-              isDark ? 'bg-black/40' : 'bg-black/20'
-            }`}
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           />
 
           <motion.div
@@ -61,72 +74,64 @@ export default function ExportDrawer({ result, onClose }: Props) {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed right-0 top-0 bottom-0 z-50 w-full sm:max-w-2xl overflow-y-auto border-l ${
-              isDark
-                ? 'bg-[#0a0a12] border-white/[0.07]'
-                : 'bg-white border-slate-200'
-            }`}
+            className="fixed right-0 top-0 bottom-0 z-50 w-full overflow-y-auto border-l border-white/[0.07] bg-[#0a0a12] sm:max-w-2xl"
           >
-            <div className={`sticky top-0 border-b backdrop-blur-sm px-6 py-4 flex items-center justify-between ${
-              isDark
-                ? 'border-white/[0.07] bg-[#06060e]/80'
-                : 'border-slate-200 bg-slate-50/80'
-            }`}>
+            <div className="sticky top-0 flex items-center justify-between border-b border-white/[0.07] bg-[#06060e]/80 px-6 py-4 backdrop-blur-sm">
               <div>
-                <h2 className={`text-lg font-semibold ${
-                  isDark ? 'text-white/80' : 'text-slate-900'
-                }`}>Export Migration</h2>
-                <p className={`mt-1 text-xs ${
-                  isDark ? 'text-white/40' : 'text-slate-600'
-                }`}>
-                  Generate migration files for your tool
+                <h2 className="text-lg font-semibold text-white/80">Export & Reports</h2>
+                <p className="mt-1 text-xs text-white/40">
+                  Generate migration files and reports
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className={`transition-colors p-1 ${
-                  isDark
-                    ? 'text-white/40 hover:text-white/60'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className="p-1 text-white/40 transition-colors hover:text-white/60"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className={`rounded-lg border p-4 ${
-                isDark
-                  ? 'border-blue-500/20 bg-blue-500/[0.06]'
-                  : 'border-blue-300 bg-blue-100'
-              }`}>
-                <p className={`text-xs ${
-                  isDark ? 'text-blue-200' : 'text-blue-900'
-                }`}>
+            <div className="space-y-6 p-6">
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/[0.06] p-4">
+                <p className="text-xs text-blue-200">
                   <span className="font-medium">Info:</span> All exports include table/column mappings with confidence scores and TODO comments for conflicts and unmatched columns.
                 </p>
               </div>
 
+              {/* PDF Report Section */}
+              <div className="rounded-lg border border-white/[0.07] bg-white/[0.03] p-4">
+                <div className="mb-3 flex items-start justify-between">
+                  <div>
+                    <h3 className="font-medium text-white/80">PDF Report</h3>
+                    <p className="mt-1 text-xs text-white/40">
+                      schemasync-reconciliation-report.pdf
+                    </p>
+                  </div>
+                </div>
+                <motion.button
+                  onClick={handleDownloadPDF}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-1.5 rounded bg-indigo-500/20 px-3 py-2 text-xs font-medium text-indigo-300 transition-colors hover:bg-indigo-500/30"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Download PDF
+                </motion.button>
+              </div>
+
               <div className="space-y-4">
+                <h3 className="font-medium text-white/80">Migration Formats</h3>
                 {EXPORT_FORMATS.map((format) => (
                   <div
                     key={format.id}
-                    className={`rounded-lg border p-4 ${
-                      isDark
-                        ? 'border-white/[0.07] bg-white/[0.03]'
-                        : 'border-slate-300 bg-slate-50'
-                    }`}
+                    className="rounded-lg border border-white/[0.07] bg-white/[0.03] p-4"
                   >
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="mb-3 flex items-start justify-between">
                       <div>
-                        <h3 className={`font-medium ${
-                          isDark ? 'text-white/80' : 'text-slate-900'
-                        }`}>
+                        <h4 className="font-medium text-white/80">
                           {format.name}
-                        </h3>
-                        <p className={`text-xs mt-1 ${
-                          isDark ? 'text-white/40' : 'text-slate-600'
-                        }`}>
+                        </h4>
+                        <p className="mt-1 text-xs text-white/40">
                           {format.filename}
                         </p>
                       </div>
@@ -137,11 +142,7 @@ export default function ExportDrawer({ result, onClose }: Props) {
                         onClick={() => handleDownload(format.id)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium transition-colors ${
-                          isDark
-                            ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
-                            : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                        }`}
+                        className="flex items-center gap-1.5 rounded bg-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/30"
                       >
                         <Download className="h-3.5 w-3.5" />
                         Download
@@ -151,14 +152,10 @@ export default function ExportDrawer({ result, onClose }: Props) {
                         onClick={() => handleCopy(format.id)}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium transition-colors ${
+                        className={`flex items-center gap-1.5 rounded px-3 py-2 text-xs font-medium transition-colors ${
                           copiedId === format.id
-                            ? isDark
-                              ? 'bg-blue-500/30 text-blue-300'
-                              : 'bg-blue-100 text-blue-700'
-                            : isDark
-                              ? 'bg-white/[0.08] text-white/70 hover:bg-white/[0.12]'
-                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                            ? 'bg-blue-500/30 text-blue-300'
+                            : 'bg-white/[0.08] text-white/70 hover:bg-white/[0.12]'
                         }`}
                       >
                         {copiedId === format.id ? (
@@ -178,14 +175,8 @@ export default function ExportDrawer({ result, onClose }: Props) {
                 ))}
               </div>
 
-              <div className={`rounded-lg border-l-4 p-4 ${
-                isDark
-                  ? 'border-l-amber-500 bg-amber-500/[0.06]'
-                  : 'border-l-amber-500 bg-amber-100'
-              }`}>
-                <p className={`text-xs ${
-                  isDark ? 'text-amber-200' : 'text-amber-900'
-                }`}>
+              <div className="rounded-lg border-l-4 border-l-amber-500 bg-amber-500/[0.06] p-4">
+                <p className="text-xs text-amber-200">
                   <span className="font-medium">Next steps:</span> Review the generated migration files carefully. All TODO comments indicate areas requiring manual review or implementation.
                 </p>
               </div>
