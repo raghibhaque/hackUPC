@@ -20,7 +20,7 @@ from backend.api.errors import (
     HTTP_STATUS_TO_ERROR_CODE,
     ValidationErrorDetail,
 )
-from backend.config import CORS_ORIGINS, DEBUG
+from backend.config import CORS_ORIGINS, DEBUG, API_V1_PREFIX
 from backend.logging_config import configure_logging
 
 configure_logging(debug=DEBUG)
@@ -57,10 +57,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(upload.router, prefix="/api")
-app.include_router(reconcile.router, prefix="/api")
-app.include_router(export.router, prefix="/api")
-app.include_router(health_router, prefix="/api")
+app.include_router(upload.router,   prefix=API_V1_PREFIX)
+app.include_router(reconcile.router, prefix=API_V1_PREFIX)
+app.include_router(export.router,    prefix=API_V1_PREFIX)
+app.include_router(health_router,    prefix=API_V1_PREFIX)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
