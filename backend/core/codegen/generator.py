@@ -309,9 +309,9 @@ def _generate_insert_select(
         tgt_col = tgt_table.get_column(cm.target_column)
 
         if src_col and tgt_col and src_col.col_type != tgt_col.col_type:
+            safe_cast = _get_safe_cast(src_col.col_type, tgt_col.col_type, cm.source_column, tgt_col)
             src_exprs.append(
-                f"CAST({cm.source_column} AS {_col_type_to_sql_bare(tgt_col)}) "
-                f"/* {src_col.raw_type} → {tgt_col.raw_type} */"
+                f"{safe_cast} /* {src_col.raw_type} → {tgt_col.raw_type} */"
             )
         else:
             src_exprs.append(cm.source_column)
@@ -329,6 +329,45 @@ def _generate_insert_select(
     lines.append(f"FROM {tm.source_table};")
 
     return lines
+
+def _get_safe_cast(src_type: ColumnType, tgt_type: ColumnType, col_name: str, tgt_col) -> str:
+    """Generate a safe CAST expression that handles risky conversions."""
+    # VARCHAR/CHAR/TEXT to INTEGER — use NULLIF to avoid errors
+    if src_type in (ColumnType.VARCHAR, ColumnType.CHAR, ColumnType.TEXT):
+        if tgt_type in (ColumnType.INTEGER, ColumnType.BIGINT, ColumnType.SMALLINT):
+            return f"CAST(NULLIF(TRIM({col_name}), '') AS {_col_type_to_sql_bare(tgt_col)})"
+        # VARCHAR/CHAR/TEXT to DECIMAL/FLOAT — use NULLIF
+        elif tgt_type in (ColumnType.DECIMAL, ColumnType.FLOAT, ColumnType.DOUBLE):
+            return f"CAST(NULLIF(TRIM({col_name}), '') AS {_col_type_to_sql_bare(tgt_col)})"
+        # VARCHAR/CHAR/TEXT to DATETIME/DATE/TIMESTAMP
+        elif tgt_type in (ColumnType.DATETIME, ColumnType.DATE, ColumnType.TIMESTAMP, ColumnType.TIME):
+            return f"STR_TO_DATE(NULLIF(TRIM({col_name}), ''), '%Y-%m-%d')"
+        # VARCHAR/CHAR/TEXT to BOOLEAN
+        elif tgt_type == ColumnType.BOOLEAN:
+            return f"CASE WHEN LOWER(NULLIF(TRIM({col_name}), '')) IN ('true','yes','1','t','y') THEN 1 ELSE 0 END"
+
+    # INTEGER to VARCHAR/TEXT — simple CAST should work
+    elif src_type in (ColumnType.INTEGER, ColumnType.BIGINT, ColumnType.SMALLINT):
+        if tgt_type in (ColumnType.VARCHAR, ColumnType.TEXT, ColumnType.CHAR):
+            return f"CAST({col_name} AS {_col_type_to_sql_bare(tgt_col)})"
+        # INTEGER to DECIMAL/FLOAT
+        elif tgt_type in (ColumnType.DECIMAL, ColumnType.FLOAT, ColumnType.DOUBLE):
+            return f"CAST({col_name} AS {_col_type_to_sql_bare(tgt_col)})"
+        # INTEGER to DATETIME — from UNIX timestamp
+        elif tgt_type in (ColumnType.DATETIME, ColumnType.TIMESTAMP):
+            return f"FROM_UNIXTIME({col_name})"
+
+    # DATETIME/TIMESTAMP to VARCHAR/TEXT
+    elif src_type in (ColumnType.DATETIME, ColumnType.TIMESTAMP):
+        if tgt_type in (ColumnType.VARCHAR, ColumnType.TEXT, ColumnType.CHAR):
+            return f"DATE_FORMAT({col_name}, '%Y-%m-%d %H:%i:%s')"
+        # DATETIME/TIMESTAMP to DATE
+        elif tgt_type == ColumnType.DATE:
+            return f"CAST({col_name} AS DATE)"
+
+    # Default safe fallback — use basic CAST
+    return f"CAST({col_name} AS {_col_type_to_sql_bare(tgt_col)})"
+
 
 def _col_type_to_sql(col) -> str:
     base = _col_type_to_sql_bare(col)
