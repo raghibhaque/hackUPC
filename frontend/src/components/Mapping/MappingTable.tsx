@@ -43,6 +43,7 @@ import ReviewControls from '../Review/ReviewControls'
 import ReviewProgressBar from '../Review/ReviewProgressBar'
 import MappingEditor from '../Review/MappingEditor'
 import ConflictIndicator from '../Review/ConflictIndicator'
+import MigrationSummaryCard from './MigrationSummaryCard'
 
 interface Props {
   result: ReconciliationResult
@@ -425,6 +426,7 @@ export default function MappingTable({ result }: Props) {
     <div className="space-y-6">
       <SchemaSummaryCard result={result} />
       <StatisticsDashboard result={result} />
+      <MigrationSummaryCard result={result} />
 
       {/* Review Progress Section */}
       <ReviewProgressBar stats={reviewStats} />
