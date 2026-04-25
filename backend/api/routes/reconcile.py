@@ -231,6 +231,73 @@ async def reconcile_stream_demo(req: DemoRequest = DemoRequest()):
     return StreamingResponse(stream_reconciliation(source, target), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 
+# ── Schema comparison stats (any schema pair) ────────────────────────────────
+
+@router.post("/compare/stats", responses=_ERR)
+async def compare_stats(req: ReconcileRequest):
+    """Full comparison summary for any two schemas — richer than /reconcile/."""
+    if not parser.can_parse(req.source_sql):
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements",
+                  detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
+    if not parser.can_parse(req.target_sql):
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements",
+                  detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the target schema"))
+
+    source = parser.parse(req.source_sql, schema_name=req.source_name)
+    target = parser.parse(req.target_sql, schema_name=req.target_name)
+    result = engine.reconcile(source, target)
+
+    high   = [tm for tm in result.table_mappings if tm.combined_score >= 0.8]
+    medium = [tm for tm in result.table_mappings if 0.5 <= tm.combined_score < 0.8]
+    low    = [tm for tm in result.table_mappings if tm.combined_score < 0.5]
+
+    errors   = [c for c in result.conflicts if c.severity == "error"]
+    warnings = [c for c in result.conflicts if c.severity == "warning"]
+    infos    = [c for c in result.conflicts if c.severity == "info"]
+
+    def _schema_stats(schema):
+        type_dist: dict[str, int] = {}
+        fk_count = 0
+        for t in schema.tables:
+            for c in t.columns:
+                key = c.col_type.value
+                type_dist[key] = type_dist.get(key, 0) + 1
+            fk_count += len(t.foreign_keys)
+        return {
+            "tables": len(schema.tables),
+            "table_names": schema.table_names,
+            "total_columns": sum(len(t.columns) for t in schema.tables),
+            "total_foreign_keys": fk_count,
+            "type_distribution": type_dist,
+        }
+
+    return {
+        "status": "complete",
+        "elapsed_seconds": result.elapsed_seconds,
+        "summary": result.summary,
+        "source_stats": _schema_stats(source),
+        "target_stats": _schema_stats(target),
+        "confidence_breakdown": {
+            "high":   [{"source": tm.source_table, "target": tm.target_table, "score": round(tm.combined_score, 4)} for tm in high],
+            "medium": [{"source": tm.source_table, "target": tm.target_table, "score": round(tm.combined_score, 4)} for tm in medium],
+            "low":    [{"source": tm.source_table, "target": tm.target_table, "score": round(tm.combined_score, 4)} for tm in low],
+        },
+        "conflict_breakdown": {
+            "errors":   len(errors),
+            "warnings": len(warnings),
+            "infos":    len(infos),
+            "by_type": {
+                ctype: len([c for c in result.conflicts if c.conflict_type == ctype])
+                for ctype in {c.conflict_type for c in result.conflicts}
+            },
+        },
+        "unmatched": {
+            "source_tables": result.unmatched_source_tables,
+            "target_tables": result.unmatched_target_tables,
+        },
+    }
+
+
 # ── Messy demo endpoints (legacy abbreviated vs modern verbose e-commerce) ────
 
 def _messy_schemas(req: MessyDemoRequest):
