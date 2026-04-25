@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios'
 import type { ReconciliationResult } from '../types'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = 'http://localhost:8000/api/v1'
 
 // ── Backend response shapes ──────────────────────────────────────────────────
 
@@ -178,7 +178,7 @@ class APIClient {
   }
 
   async runDemo(): Promise<ReconciliationResult> {
-    const res = await this.client.post<BackendReconcileResponse>('/api/reconcile/demo')
+    const res = await this.client.post<BackendReconcileResponse>('/reconcile/demo')
     const { status, result, error } = res.data
     if (status !== 'complete' || !result) {
       throw new Error(error ?? 'Demo reconciliation failed')
@@ -189,7 +189,7 @@ class APIClient {
   async uploadFile(file: File): Promise<string> {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await this.client.post<FileUploadResponse>('/api/upload/', formData, {
+    const res = await this.client.post<FileUploadResponse>('/upload/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return res.data.filename
@@ -197,7 +197,7 @@ class APIClient {
 
   async reconcileFiles(sourceFile: string, targetFile: string): Promise<ReconciliationResult> {
     const res = await this.client.post<BackendReconcileResponse>(
-      `/api/reconcile/files?source_file=${encodeURIComponent(sourceFile)}&target_file=${encodeURIComponent(targetFile)}`
+      `/reconcile/files?source_file=${encodeURIComponent(sourceFile)}&target_file=${encodeURIComponent(targetFile)}`
     )
     const { status, result, error } = res.data
     if (status !== 'complete' || !result) {
@@ -207,7 +207,7 @@ class APIClient {
   }
 
   async health(): Promise<{ status: string }> {
-    const res = await this.client.get<{ status: string }>('/api/health')
+    const res = await this.client.get<{ status: string }>('/health')
     return res.data
   }
 }
