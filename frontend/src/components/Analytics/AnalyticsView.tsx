@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import ReconciliationStats from '../shared/ReconciliationStats'
 import ExportResults from '../shared/ExportResults'
+import BusinessImpactDashboard from './BusinessImpactDashboard'
 
 interface Props { result: ReconciliationResult }
 
@@ -42,6 +43,9 @@ export default function AnalyticsView({ result }: Props) {
 
       {/* Reconciliation Stats */}
       <ReconciliationStats result={result} />
+
+      {/* Business Impact Dashboard */}
+      <BusinessImpactDashboard result={result} />
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
