@@ -223,34 +223,35 @@ function MatchDistributionPie({ matched, unmatched }: { matched: number; unmatch
     >
       <h3 className="mb-4 text-sm font-semibold text-white/70">Matching Result</h3>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-6">
         {/* Pie chart */}
-        <div className="relative h-20 w-20 shrink-0">
+        <div className="relative h-24 w-24 shrink-0 flex items-center justify-center">
           <svg className="h-full w-full" viewBox="0 0 100 100">
             <motion.circle
               cx="50"
               cy="50"
-              r="40"
+              r="35"
               fill="none"
               stroke="#10b981"
-              strokeWidth="12"
-              strokeDasharray={`${(matchedPercent / 100) * 2 * Math.PI * 40} ${2 * Math.PI * 40}`}
-              initial={{ strokeDasharray: `0 ${2 * Math.PI * 40}`, transform: 'rotate(-90deg)' }}
-              animate={{ strokeDasharray: `${(matchedPercent / 100) * 2 * Math.PI * 40} ${2 * Math.PI * 40}` }}
+              strokeWidth="8"
+              strokeDasharray={`${(matchedPercent / 100) * 2 * Math.PI * 35} ${2 * Math.PI * 35}`}
+              initial={{ strokeDasharray: `0 ${2 * Math.PI * 35}` }}
+              animate={{ strokeDasharray: `${(matchedPercent / 100) * 2 * Math.PI * 35} ${2 * Math.PI * 35}` }}
               transition={{ duration: 1, ease: 'easeOut' }}
-              style={{ originX: '50px', originY: '50px', transformBox: 'fill-box' }}
+              strokeLinecap="round"
+              style={{ transform: 'rotate(-90deg)', transformOrigin: '50px 50px' }}
             />
             <circle
               cx="50"
               cy="50"
-              r="40"
+              r="35"
               fill="none"
               stroke="rgba(255,255,255,0.1)"
-              strokeWidth="12"
+              strokeWidth="8"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-sm font-bold text-white/60">{matchedPercent.toFixed(0)}%</span>
+            <span className="text-base font-bold text-white/70">{matchedPercent.toFixed(0)}%</span>
           </div>
         </div>
 
