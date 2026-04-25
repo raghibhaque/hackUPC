@@ -6,12 +6,14 @@ import type { ReconciliationResult, TableMapping } from '../../types'
 import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useTheme } from '../../hooks/useTheme'
+import { useTemplates } from '../../hooks/useTemplates'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
 import ColumnDetailsDrawer from './ColumnDetailsDrawer'
 import ConfidenceFilterSlider from './ConfidenceFilterSlider'
 import BulkActionBar from './BulkActionBar'
 import MappingDiffView from './MappingDiffView'
+import TemplateManager from './TemplateManager'
 
 interface Props {
   result: ReconciliationResult
@@ -31,6 +33,29 @@ export default function MappingTable({ result }: Props) {
   const searchRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rowsRef = useRef<Map<number, HTMLDivElement>>(new Map())
+
+  // Create a hash for the current schema to use as a template namespace
+  const schemaHash = useMemo(() => {
+    const { tables_in_a, tables_in_b, tables_matched } = result.summary
+    return `${tables_in_a}_${tables_in_b}_${tables_matched}`
+  }, [result.summary])
+
+  const { templates, saveTemplate: saveTemplateToStorage, deleteTemplate: deleteTemplateFromStorage } = useTemplates(schemaHash)
+
+  const handleSaveTemplate = (name: string) => {
+    const reviewedIndices = Array.from(reviewed)
+    const expandedIndices = Array.from(expanded)
+    saveTemplateToStorage(name, reviewedIndices, expandedIndices)
+  }
+
+  const handleLoadTemplate = (template: { reviewedIndices: number[]; expandedIndices: number[] }) => {
+    setReviewed(new Set(template.reviewedIndices))
+    setExpanded(new Set(template.expandedIndices))
+  }
+
+  const handleDeleteTemplate = (templateId: string) => {
+    deleteTemplateFromStorage(templateId)
+  }
 
   // Generate a unique session key for this reconciliation result
   const sessionKey = useMemo(() => {
@@ -187,13 +212,24 @@ export default function MappingTable({ result }: Props) {
 
   return (
     <div className="space-y-6">
-      <BulkActionBar
-        selectedCount={selectedForBulk.size}
-        totalCount={filtered.length}
-        onMarkReviewed={handleBulkMarkReviewed}
-        onExportSelected={handleExportSelected}
-        onClearSelection={() => setSelectedForBulk(new Set())}
-      />
+      <div className="flex items-center justify-between gap-4">
+        <BulkActionBar
+          selectedCount={selectedForBulk.size}
+          totalCount={filtered.length}
+          onMarkReviewed={handleBulkMarkReviewed}
+          onExportSelected={handleExportSelected}
+          onClearSelection={() => setSelectedForBulk(new Set())}
+        />
+        <div className="relative">
+          <TemplateManager
+            templates={templates}
+            onSave={handleSaveTemplate}
+            onLoad={handleLoadTemplate}
+            onDelete={handleDeleteTemplate}
+            isDark={isDark}
+          />
+        </div>
+      </div>
 
       <MappingDiffView
         mapping={diffMapping}
