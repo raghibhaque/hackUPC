@@ -162,6 +162,7 @@ export default function MappingTable({ result }: Props) {
               onViewDetails={() => setSelectedMapping(m)}
               reviewed={reviewed.has(i)}
               onToggleReviewed={() => toggleReviewed(i)}
+              searchTerm={search}
             />
           ))}
         </div>
@@ -209,6 +210,7 @@ function Row({
   onViewDetails,
   reviewed = false,
   onToggleReviewed,
+  searchTerm = '',
 }: {
   mapping: TableMapping
   index: number
@@ -218,6 +220,7 @@ function Row({
   onViewDetails: () => void
   reviewed?: boolean
   onToggleReviewed?: () => void
+  searchTerm?: string
 }) {
   const sourceTypes = Array.from(
     new Set(
@@ -263,6 +266,7 @@ function Row({
             name={mapping.table_a.name}
             cols={mapping.table_a.columns.length}
             color="indigo"
+            highlight={searchTerm}
           />
 
           <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/20" />
@@ -271,6 +275,7 @@ function Row({
             name={mapping.table_b.name}
             cols={mapping.table_b.columns.length}
             color="violet"
+            highlight={searchTerm}
           />
         </div>
 
@@ -394,11 +399,30 @@ function TableName({
   name,
   cols,
   color,
+  highlight = '',
 }: {
   name: string
   cols: number
   color: 'indigo' | 'violet'
+  highlight?: string
 }) {
+  const renderHighlight = () => {
+    if (!highlight.trim()) return name
+
+    const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = name.split(regex)
+
+    return parts.map((part, i) =>
+      regex.test(part) ? (
+        <span key={i} className="bg-yellow-400/30 font-semibold text-yellow-200">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    )
+  }
+
   return (
     <div className="min-w-0 flex-1">
       <p
@@ -407,7 +431,7 @@ function TableName({
           color === 'indigo' ? 'text-indigo-200/90' : 'text-violet-200/90'
         )}
       >
-        {name}
+        {renderHighlight()}
       </p>
 
       <p className="text-xs text-white/25">{cols} cols</p>
