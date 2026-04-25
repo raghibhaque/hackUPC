@@ -1,11 +1,12 @@
 """Export route — download generated migration SQL."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse
 
 from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDetail
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ExportResponse
+from backend.core.codegen.dialects import SQLDialect
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.reconciliation.engine import ReconciliationEngine
 from backend.config import DEMO_DIR
@@ -22,8 +23,11 @@ _ERR = {
 }
 
 
+_DIALECT_Q = Query(SQLDialect.MYSQL, description="SQL dialect for generated output")
+
+
 @router.post("/sql", response_model=ExportResponse, responses=_ERR)
-async def export_migration_sql(req: ReconcileRequest):
+async def export_migration_sql(req: ReconcileRequest, dialect: SQLDialect = _DIALECT_Q):
     if not parser.can_parse(req.source_sql):
         api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the source schema"))
     if not parser.can_parse(req.target_sql):
@@ -31,7 +35,7 @@ async def export_migration_sql(req: ReconcileRequest):
 
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
-    result = engine.reconcile(source_schema, target_schema)
+    result = engine.reconcile(source_schema, target_schema, dialect=dialect)
 
     return ExportResponse(
         sql=result.migration_sql or "-- No migration generated",
@@ -40,7 +44,7 @@ async def export_migration_sql(req: ReconcileRequest):
 
 
 @router.get("/demo/sql", responses=_ERR)
-async def export_demo_sql():
+async def export_demo_sql(dialect: SQLDialect = _DIALECT_Q):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
@@ -48,7 +52,7 @@ async def export_demo_sql():
 
     source = parser.parse(ghost_path.read_text(), schema_name="ghost")
     target = parser.parse(wp_path.read_text(), schema_name="wordpress")
-    result = engine.reconcile(source, target)
+    result = engine.reconcile(source, target, dialect=dialect)
 
     return PlainTextResponse(
         content=result.migration_sql or "-- No migration generated",
@@ -58,10 +62,10 @@ async def export_demo_sql():
 
 
 @router.post("/alter", response_model=ExportResponse, responses=_ERR)
-async def export_alter_migration_sql(req: ReconcileRequest):
+async def export_alter_migration_sql(req: ReconcileRequest, dialect: SQLDialect = _DIALECT_Q):
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
-    result = engine.reconcile(source_schema, target_schema)
+    result = engine.reconcile(source_schema, target_schema, dialect=dialect)
 
     return ExportResponse(
         sql=result.migration_alter_sql or "-- No ALTER TABLE migration generated",
@@ -70,13 +74,13 @@ async def export_alter_migration_sql(req: ReconcileRequest):
 
 
 @router.get("/demo/alter", responses=_ERR)
-async def export_demo_alter_sql():
+async def export_demo_alter_sql(dialect: SQLDialect = _DIALECT_Q):
     ghost_sql = (DEMO_DIR / "ghost_schema.sql").read_text()
     wp_sql = (DEMO_DIR / "wordpress_schema.sql").read_text()
 
     source = parser.parse(ghost_sql, schema_name="ghost")
     target = parser.parse(wp_sql, schema_name="wordpress")
-    result = engine.reconcile(source, target)
+    result = engine.reconcile(source, target, dialect=dialect)
 
     return PlainTextResponse(
         content=result.migration_alter_sql or "-- No ALTER TABLE migration generated",
@@ -86,10 +90,10 @@ async def export_demo_alter_sql():
 
 
 @router.post("/rollback", response_model=ExportResponse, responses=_ERR)
-async def export_rollback_sql(req: ReconcileRequest):
+async def export_rollback_sql(req: ReconcileRequest, dialect: SQLDialect = _DIALECT_Q):
     source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
     target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
-    result = engine.reconcile(source_schema, target_schema)
+    result = engine.reconcile(source_schema, target_schema, dialect=dialect)
 
     return ExportResponse(
         sql=result.rollback_sql or "-- No rollback generated",
@@ -98,13 +102,13 @@ async def export_rollback_sql(req: ReconcileRequest):
 
 
 @router.get("/demo/rollback", responses=_ERR)
-async def export_demo_rollback_sql():
+async def export_demo_rollback_sql(dialect: SQLDialect = _DIALECT_Q):
     ghost_sql = (DEMO_DIR / "ghost_schema.sql").read_text()
     wp_sql = (DEMO_DIR / "wordpress_schema.sql").read_text()
 
     source = parser.parse(ghost_sql, schema_name="ghost")
     target = parser.parse(wp_sql, schema_name="wordpress")
-    result = engine.reconcile(source, target)
+    result = engine.reconcile(source, target, dialect=dialect)
 
     return PlainTextResponse(
         content=result.rollback_sql or "-- No rollback generated",
@@ -115,19 +119,19 @@ async def export_demo_rollback_sql():
 
 # ── Messy demo exports ────────────────────────────────────────────────────────
 
-def _messy_result(req: MessyDemoRequest):
+def _messy_result(req: MessyDemoRequest, dialect: SQLDialect):
     legacy_path = DEMO_DIR / "messy_legacy_schema.sql"
     modern_path = DEMO_DIR / "messy_modern_schema.sql"
     if not legacy_path.exists() or not modern_path.exists():
         api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
     source = parser.parse(legacy_path.read_text(), schema_name=req.source_name)
     target = parser.parse(modern_path.read_text(), schema_name=req.target_name)
-    return engine.reconcile(source, target), req
+    return engine.reconcile(source, target, dialect=dialect), req
 
 
 @router.get("/messy/sql", response_model=ExportResponse, responses=_ERR)
-async def export_messy_sql(req: MessyDemoRequest = MessyDemoRequest()):
-    result, r = _messy_result(req)
+async def export_messy_sql(req: MessyDemoRequest = MessyDemoRequest(), dialect: SQLDialect = _DIALECT_Q):
+    result, r = _messy_result(req, dialect)
     return ExportResponse(
         sql=result.migration_sql or "-- No migration generated",
         filename=f"migration_{r.source_name}_to_{r.target_name}.sql",
@@ -135,8 +139,8 @@ async def export_messy_sql(req: MessyDemoRequest = MessyDemoRequest()):
 
 
 @router.get("/messy/alter", response_model=ExportResponse, responses=_ERR)
-async def export_messy_alter_sql(req: MessyDemoRequest = MessyDemoRequest()):
-    result, r = _messy_result(req)
+async def export_messy_alter_sql(req: MessyDemoRequest = MessyDemoRequest(), dialect: SQLDialect = _DIALECT_Q):
+    result, r = _messy_result(req, dialect)
     return ExportResponse(
         sql=result.migration_alter_sql or "-- No ALTER TABLE migration generated",
         filename=f"migration_alter_{r.source_name}_to_{r.target_name}.sql",
@@ -144,8 +148,8 @@ async def export_messy_alter_sql(req: MessyDemoRequest = MessyDemoRequest()):
 
 
 @router.get("/messy/rollback", response_model=ExportResponse, responses=_ERR)
-async def export_messy_rollback_sql(req: MessyDemoRequest = MessyDemoRequest()):
-    result, r = _messy_result(req)
+async def export_messy_rollback_sql(req: MessyDemoRequest = MessyDemoRequest(), dialect: SQLDialect = _DIALECT_Q):
+    result, r = _messy_result(req, dialect)
     return ExportResponse(
         sql=result.rollback_sql or "-- No rollback generated",
         filename=f"rollback_{r.target_name}_to_{r.source_name}.sql",

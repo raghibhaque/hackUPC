@@ -15,6 +15,7 @@ from backend.core.reconciliation.scorer import (
 )
 from backend.core.reconciliation.assignment import hungarian_assignment
 from backend.core.conflicts.detector import detect_conflicts
+from backend.core.codegen.dialects import SQLDialect
 from backend.core.codegen.generator import (
     generate_migration_sql, generate_alter_table_migration, generate_rollback_sql
 )
@@ -29,7 +30,13 @@ class ReconciliationEngine:
         self.table_threshold = table_threshold
         self.column_threshold = column_threshold
 
-    def reconcile(self, source: Schema, target: Schema, on_progress=None) -> ReconciliationResult:
+    def reconcile(
+        self,
+        source: Schema,
+        target: Schema,
+        on_progress=None,
+        dialect: SQLDialect = SQLDialect.MYSQL,
+    ) -> ReconciliationResult:
         def _progress(p: float, step: str):
             if on_progress:
                 on_progress(p, step)
@@ -127,9 +134,9 @@ class ReconciliationEngine:
         result.conflicts = detect_conflicts(result, source, target)
 
         _progress(0.90, "generating migration SQL")
-        result.migration_sql = generate_migration_sql(result, source, target)
-        result.migration_alter_sql = generate_alter_table_migration(result, source, target)
-        result.rollback_sql = generate_rollback_sql(result, source, target)
+        result.migration_sql = generate_migration_sql(result, source, target, dialect)
+        result.migration_alter_sql = generate_alter_table_migration(result, source, target, dialect)
+        result.rollback_sql = generate_rollback_sql(result, source, target, dialect)
 
         elapsed = time.time() - start_time
         result.elapsed_seconds = round(elapsed, 3)
