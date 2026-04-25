@@ -296,6 +296,7 @@ class ReconciliationResult:
     unmatched_target_tables: list[str] = field(default_factory=list)
     conflicts: list[Conflict] = field(default_factory=list)
     migration_sql: Optional[str] = None
+    elapsed_seconds: float = 0.0
 
     @property
     def summary(self) -> dict:
@@ -324,4 +325,5 @@ class ReconciliationResult:
             "unmatched_target_tables": self.unmatched_target_tables,
             "conflicts": [c.to_dict() for c in self.conflicts],
             "migration_sql": self.migration_sql,
+            "elapsed_seconds": self.elapsed_seconds,
         }

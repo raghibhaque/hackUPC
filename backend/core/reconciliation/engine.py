@@ -4,6 +4,7 @@ Reconciliation Engine — the main pipeline orchestrator.
 Takes two parsed Schemas and produces a full ReconciliationResult
 with table mappings, column mappings, conflicts, and migration scaffold.
 """
+import time
 
 from backend.core.ir.models import (
     Schema, ReconciliationResult, TableMapping, ColumnMapping,
@@ -27,6 +28,7 @@ class ReconciliationEngine:
         self.column_threshold = column_threshold
 
     def reconcile(self, source: Schema, target: Schema) -> ReconciliationResult:
+        start_time = time.time()
         result = ReconciliationResult(
             source_schema=source.name,
             target_schema=target.name,
@@ -114,5 +116,7 @@ class ReconciliationEngine:
         result.conflicts = detect_conflicts(result, source, target)
 
         result.migration_sql = generate_migration_sql(result, source, target)
-
+        
+        elapsed = time.time() - start_time
+        result.elapsed_seconds = round(elapsed, 3)
         return result
