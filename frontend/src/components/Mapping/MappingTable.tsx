@@ -219,6 +219,7 @@ export default function MappingTable({ result }: Props) {
           onMarkReviewed={handleBulkMarkReviewed}
           onExportSelected={handleExportSelected}
           onClearSelection={() => setSelectedForBulk(new Set())}
+          isDark={isDark}
         />
         <div className="relative">
           <TemplateManager
@@ -298,6 +299,7 @@ export default function MappingTable({ result }: Props) {
         onChange={setMinConfidence}
         mappingsCount={result.table_mappings?.length ?? 0}
         filteredCount={filtered.length}
+        isDark={isDark}
       />
 
       <div className={`rounded-xl border p-4 ${

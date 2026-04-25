@@ -14,11 +14,9 @@ export function useTheme() {
       setThemeState(stored)
       applyTheme(stored)
     } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      const initialTheme = prefersDark ? 'dark' : 'light'
-      setThemeState(initialTheme)
-      applyTheme(initialTheme)
+      // Default to dark mode, can be toggled by user
+      setThemeState('dark')
+      applyTheme('dark')
     }
 
     setIsLoaded(true)
