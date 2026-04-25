@@ -9,6 +9,7 @@ from backend.api.models.requests import ReconcileRequest, DemoRequest
 from backend.api.models.responses import ReconcileResponse, JobSubmitResponse, JobStatusResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.parsers.prisma import PrismaParser
+from backend.core.parsers.json_schema import JSONSchemaParser
 from backend.core.parsers.base import BaseParser
 from backend.core.reconciliation.engine import ReconciliationEngine
 from backend.config import DEMO_DIR, UPLOAD_DIR
@@ -17,6 +18,7 @@ from backend.services.pipeline import create_job, get_job, run_reconciliation_jo
 router = APIRouter(prefix="/reconcile", tags=["reconcile"])
 _sql_parser = SQLDDLParser()
 _prisma_parser = PrismaParser()
+_json_parser = JSONSchemaParser()
 parser = _sql_parser  # used by raw-SQL endpoints
 engine = ReconciliationEngine()
 
@@ -26,7 +28,9 @@ def _detect_parser(text: str) -> BaseParser:
         return _sql_parser
     if _prisma_parser.can_parse(text):
         return _prisma_parser
-    raise HTTPException(400, "Could not detect schema format (no CREATE TABLE or Prisma model found)")
+    if _json_parser.can_parse(text):
+        return _json_parser
+    raise HTTPException(400, "Could not detect schema format (supported: SQL DDL, Prisma, JSON Schema)")
 
 
 @router.post("/demo", response_model=ReconcileResponse)

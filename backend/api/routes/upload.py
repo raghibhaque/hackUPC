@@ -8,11 +8,13 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from backend.api.models.responses import UploadResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.parsers.prisma import PrismaParser
+from backend.core.parsers.json_schema import JSONSchemaParser
 from backend.config import UPLOAD_DIR, MAX_UPLOAD_BYTES, ALLOWED_EXTENSIONS
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 _sql_parser = SQLDDLParser()
 _prisma_parser = PrismaParser()
+_json_parser = JSONSchemaParser()
 parser = _sql_parser  # default for the typed /upload/ endpoint
 
 
@@ -99,13 +101,12 @@ async def detect_and_parse(file: UploadFile = File(...)):
     elif _prisma_parser.can_parse(text):
         detected_format = "prisma"
         active_parser = _prisma_parser
-    elif '"type"' in text and '"properties"' in text:
+    elif _json_parser.can_parse(text):
         detected_format = "json_schema"
+        active_parser = _json_parser
 
-    if detected_format == "unknown":
-        raise HTTPException(400, "Could not detect schema format. Supported: SQL DDL, Prisma, JSON Schema")
     if active_parser is None:
-        raise HTTPException(400, f"Detected format '{detected_format}' is not yet supported")
+        raise HTTPException(400, "Could not detect schema format. Supported: SQL DDL, Prisma, JSON Schema")
 
     save_path = UPLOAD_DIR / safe_name
     save_path.write_text(text, encoding="utf-8")
