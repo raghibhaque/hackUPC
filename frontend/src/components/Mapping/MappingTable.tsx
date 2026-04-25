@@ -7,6 +7,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
 import ColumnDetailsDrawer from './ColumnDetailsDrawer'
+import ConfidenceFilterSlider from './ConfidenceFilterSlider'
 
 interface Props {
   result: ReconciliationResult
@@ -17,6 +18,7 @@ export default function MappingTable({ result }: Props) {
   const [search, setSearch] = useState('')
   const [selectedMapping, setSelectedMapping] = useState<TableMapping | null>(null)
   const [reviewed, setReviewed] = useState<Set<number>>(new Set())
+  const [minConfidence, setMinConfidence] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
 
   useKeyboardShortcuts({
@@ -25,29 +27,38 @@ export default function MappingTable({ result }: Props) {
   })
 
   const filtered = useMemo(() => {
-    if (search.trim() === '') return result.table_mappings ?? []
+    let mappings = result.table_mappings ?? []
 
-    const q = search.toLowerCase()
-
-    return (result.table_mappings ?? []).filter((m) => {
-      if (
-        m.table_a.name.toLowerCase().includes(q) ||
-        m.table_b.name.toLowerCase().includes(q)
-      ) {
-        return true
-      }
-
-      for (const col of m.column_mappings ?? []) {
+    // Search filter
+    if (search.trim() !== '') {
+      const q = search.toLowerCase()
+      mappings = mappings.filter((m) => {
         if (
-          col.col_a.name.toLowerCase().includes(q) ||
-          col.col_b.name.toLowerCase().includes(q)
+          m.table_a.name.toLowerCase().includes(q) ||
+          m.table_b.name.toLowerCase().includes(q)
         ) {
           return true
         }
-      }
 
-      return false
-    })
+        for (const col of m.column_mappings ?? []) {
+          if (
+            col.col_a.name.toLowerCase().includes(q) ||
+            col.col_b.name.toLowerCase().includes(q)
+          ) {
+            return true
+          }
+        }
+
+        return false
+      })
+    }
+
+    // Confidence filter
+    if (minConfidence > 0) {
+      mappings = mappings.filter(m => m.confidence >= minConfidence)
+    }
+
+    return mappings
   }, [result.table_mappings, search])
 
   const toggle = (i: number) => {
@@ -115,6 +126,13 @@ export default function MappingTable({ result }: Props) {
           </button>
         )}
       </div>
+
+      <ConfidenceFilterSlider
+        minConfidence={minConfidence}
+        onChange={setMinConfidence}
+        mappingsCount={result.table_mappings?.length ?? 0}
+        filteredCount={filtered.length}
+      />
 
       <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
         <h3 className="mb-2 text-xs font-semibold text-white/40">
