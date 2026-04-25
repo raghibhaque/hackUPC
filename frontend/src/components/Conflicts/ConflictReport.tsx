@@ -14,9 +14,33 @@ interface ConflictItem {
 }
 
 const SEVERITY_META = {
-  error:   { icon: XCircle,       label: 'Error',   border: 'border-rose-500/20',   bg: 'bg-rose-500/[0.06]',   text: 'text-rose-300/80',   dot: 'bg-rose-400'   },
-  warning: { icon: AlertTriangle, label: 'Warning', border: 'border-amber-500/20',  bg: 'bg-amber-500/[0.06]',  text: 'text-amber-300/80',  dot: 'bg-amber-400'  },
-  info:    { icon: Info,          label: 'Info',    border: 'border-blue-500/20',   bg: 'bg-blue-500/[0.06]',   text: 'text-blue-300/80',   dot: 'bg-blue-400'   },
+  error:   {
+    icon: XCircle,
+    label: 'Error',
+    border: 'border-rose-500/30',
+    bg: 'bg-gradient-to-br from-rose-500/12 to-rose-600/4',
+    text: 'text-rose-300',
+    dot: 'bg-rose-400',
+    glow: 'shadow-[0_8px_24px_rgba(244,63,94,0.15)]',
+  },
+  warning: {
+    icon: AlertTriangle,
+    label: 'Warning',
+    border: 'border-amber-500/30',
+    bg: 'bg-gradient-to-br from-amber-500/12 to-amber-600/4',
+    text: 'text-amber-300',
+    dot: 'bg-amber-400',
+    glow: 'shadow-[0_8px_24px_rgba(217,119,6,0.15)]',
+  },
+  info: {
+    icon: Info,
+    label: 'Info',
+    border: 'border-blue-500/30',
+    bg: 'bg-gradient-to-br from-blue-500/12 to-blue-600/4',
+    text: 'text-blue-300',
+    dot: 'bg-blue-400',
+    glow: 'shadow-[0_8px_24px_rgba(59,130,246,0.15)]',
+  },
 }
 
 type Severity = keyof typeof SEVERITY_META
@@ -60,30 +84,42 @@ export default function ConflictReport({ result }: Props) {
     <div className="space-y-6">
 
       {/* Severity filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-white/40">Filter by:</span>
-        {(['error', 'warning', 'info'] as Severity[]).map(severity => {
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-wrap items-center gap-2.5"
+      >
+        <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Filter by:</span>
+        {(['error', 'warning', 'info'] as Severity[]).map((severity, idx) => {
           const meta = SEVERITY_META[severity]
           const isSelected = selectedSeverities.has(severity)
           return (
             <motion.button
               key={severity}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={{ scale: 1.06, y: -1 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => toggleSeverity(severity)}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
+                'relative overflow-hidden flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all',
                 isSelected
-                  ? `${meta.border} ${meta.bg} ${meta.text}`
-                  : 'border border-white/[0.06] bg-white/[0.02] text-white/30 hover:border-white/[0.12] hover:bg-white/[0.05]'
+                  ? `${meta.border} ${meta.bg} ${meta.text} ${meta.glow}`
+                  : 'border border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.15] hover:bg-white/[0.08]'
               )}
             >
-              <div className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+              <motion.div
+                animate={{ scale: isSelected ? [1, 1.3, 1] : 1 }}
+                transition={{ duration: isSelected ? 0.4 : 0 }}
+                className={cn('h-2 w-2 rounded-full', meta.dot)}
+              />
               {meta.label}
+              <span className="text-[10px] opacity-60">({selectedSeverities.has(severity) ? allConflicts.filter(c => c.severity === severity).length : 0})</span>
             </motion.button>
           )
         })}
-      </div>
+      </motion.div>
 
       {/* Summary chips */}
       <div className="flex flex-wrap gap-3">
@@ -118,29 +154,35 @@ export default function ConflictReport({ result }: Props) {
                 </div>
 
                 {/* Items */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {items.map((item, i) => (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, x: -6 }}
+                      initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: i * 0.04 }}
+                      transition={{ duration: 0.25, delay: i * 0.05 }}
+                      whileHover={{ x: 4, scale: 1.01 }}
                       className={cn(
-                        'rounded-lg border px-4 py-3',
+                        'relative overflow-hidden rounded-lg border px-4 py-3.5 backdrop-blur-sm transition-all',
                         meta.border,
                         meta.bg,
+                        meta.glow,
                       )}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', meta.dot)} />
-                        <div className="min-w-0">
+                      <div className="flex items-start gap-3.5">
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
+                          className={cn('mt-1 h-2 w-2 shrink-0 rounded-full', meta.dot)}
+                        />
+                        <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <code className="text-white/50">{item.tableName}</code>
-                            <span className="text-white/15">·</span>
-                            <code className={cn('font-medium', meta.text)}>{item.columnPair}</code>
+                            <code className="font-mono bg-white/[0.05] rounded px-1.5 py-0.5 text-white/60">{item.tableName}</code>
+                            <span className="text-white/20">→</span>
+                            <code className={cn('font-mono font-semibold bg-white/[0.05] rounded px-1.5 py-0.5', meta.text)}>{item.columnPair}</code>
                           </div>
                           {item.description && (
-                            <p className="mt-1 text-xs text-white/35 leading-relaxed">
+                            <p className="mt-2 text-xs text-white/50 leading-relaxed font-medium">
                               {item.description}
                             </p>
                           )}
@@ -160,14 +202,48 @@ export default function ConflictReport({ result }: Props) {
 
 function SummaryChip({ value, label, color }: { value: number; label: string; color: 'amber' | 'rose' | 'neutral' }) {
   const colors = {
-    amber:   'border-amber-500/20 bg-amber-500/[0.07] text-amber-300',
-    rose:    'border-rose-500/20  bg-rose-500/[0.07]  text-rose-300',
-    neutral: 'border-white/[0.06] bg-white/[0.03]     text-white/30',
+    amber: {
+      border: 'border-amber-500/30',
+      bg: 'bg-gradient-to-br from-amber-500/12 to-amber-600/4',
+      text: 'text-amber-300',
+      glow: 'shadow-[0_8px_24px_rgba(217,119,6,0.15)]',
+    },
+    rose: {
+      border: 'border-rose-500/30',
+      bg: 'bg-gradient-to-br from-rose-500/12 to-rose-600/4',
+      text: 'text-rose-300',
+      glow: 'shadow-[0_8px_24px_rgba(244,63,94,0.15)]',
+    },
+    neutral: {
+      border: 'border-white/[0.08]',
+      bg: 'bg-gradient-to-br from-white/[0.04] to-white/[0.01]',
+      text: 'text-white/40',
+      glow: 'shadow-[0_8px_24px_rgba(255,255,255,0.05)]',
+    },
   }
+  const c = colors[color]
   return (
-    <div className={cn('rounded-xl border px-4 py-3 text-center min-w-[88px]', colors[color])}>
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
-      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wider opacity-70">{label}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        'relative overflow-hidden rounded-xl border px-5 py-4 text-center min-w-[100px] backdrop-blur-sm',
+        c.border,
+        c.bg,
+        c.glow
+      )}
+    >
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className={cn('text-3xl font-bold tabular-nums', c.text)}
+      >
+        {value}
+      </motion.p>
+      <p className="mt-1 text-[11px] font-bold uppercase tracking-widest opacity-70">{label}</p>
+    </motion.div>
   )
 }
