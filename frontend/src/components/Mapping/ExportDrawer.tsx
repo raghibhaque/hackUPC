@@ -7,6 +7,7 @@ import { generatePDFReport } from '../../lib/pdfReportGenerator'
 import { showToast } from '../../lib/toast'
 import MigrationOptions from './MigrationOptions'
 import MigrationPreview from './MigrationPreview'
+import DataLossRiskIndicator from './DataLossRiskIndicator'
 
 interface Props {
   result: ReconciliationResult | null
@@ -153,6 +154,9 @@ export default function ExportDrawer({ result, onClose }: Props) {
                   )}
                 </AnimatePresence>
               </motion.div>
+
+              {/* Data Loss Risk Indicator */}
+              <DataLossRiskIndicator result={result} />
 
               {/* PDF Report Section */}
               <div className="rounded-lg border border-white/[0.07] bg-white/[0.03] p-4">
