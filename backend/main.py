@@ -4,14 +4,21 @@ SchemaSync Backend — FastAPI application.
 Run with: uvicorn backend.main:app --reload --port 8000
 """
 
+import uuid
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.routes import upload, reconcile, export
 from backend.api.routes.health import router as health_router
-from backend.api.errors import ErrorCode, ErrorResponse
+from backend.api.errors import (
+    ErrorCode, ErrorResponse,
+    HTTP_STATUS_TO_ERROR_CODE,
+    ValidationErrorDetail,
+)
 from backend.config import CORS_ORIGINS, DEBUG
 
 app = FastAPI(
@@ -20,6 +27,22 @@ app = FastAPI(
     version="0.1.0",
     debug=DEBUG,
 )
+
+
+# ── Middleware ────────────────────────────────────────────────────────────────
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Attach a per-request UUID to request.state and echo it in the response header."""
+
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+
+app.add_middleware(RequestIDMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,53 +58,70 @@ app.include_router(export.router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 
 
-# ── Global exception handlers ────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _request_id(request: Request) -> str | None:
+    return getattr(request.state, "request_id", None)
+
+
+def _json_error(
+    status_code: int,
+    code: ErrorCode,
+    message: str,
+    detail=None,
+    request_id: str | None = None,
+) -> JSONResponse:
+    body = ErrorResponse(
+        error=code.value,
+        message=message,
+        detail=detail,
+        request_id=request_id,
+    ).model_dump(mode="json")
+    return JSONResponse(status_code=status_code, content=body)
+
+
+# ── Global exception handlers ─────────────────────────────────────────────────
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    # If the detail is already our structured dict, pass it through unchanged.
-    if isinstance(exc.detail, dict) and "error" in exc.detail and "message" in exc.detail:
-        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+    rid = _request_id(request)
 
-    # Otherwise wrap the plain string detail into our envelope.
-    _status_to_code = {
-        400: ErrorCode.VALIDATION_ERROR,
-        404: ErrorCode.NOT_FOUND,
-        405: ErrorCode.VALIDATION_ERROR,
-        409: ErrorCode.VALIDATION_ERROR,
-        413: ErrorCode.FILE_TOO_LARGE,
-        422: ErrorCode.VALIDATION_ERROR,
-        500: ErrorCode.INTERNAL_ERROR,
-        503: ErrorCode.SERVICE_UNAVAILABLE,
-    }
-    code = _status_to_code.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
-    body = ErrorResponse(error=code.value, message=str(exc.detail)).model_dump()
-    return JSONResponse(status_code=exc.status_code, content=body)
+    # Our own api_error() already built the structured dict — enrich with request_id.
+    if isinstance(exc.detail, dict) and "error" in exc.detail and "message" in exc.detail:
+        body = dict(exc.detail)
+        body["request_id"] = rid
+        return JSONResponse(status_code=exc.status_code, content=body)
+
+    # Plain HTTPException raised elsewhere — map to our envelope.
+    code = HTTP_STATUS_TO_ERROR_CODE.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
+    return _json_error(exc.status_code, code, str(exc.detail), request_id=rid)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    body = ErrorResponse(
-        error=ErrorCode.VALIDATION_ERROR.value,
-        message="Request validation failed",
-        detail=exc.errors(),
-    ).model_dump()
-    return JSONResponse(status_code=422, content=body)
+    return _json_error(
+        422,
+        ErrorCode.VALIDATION_ERROR,
+        "Request validation failed",
+        detail=ValidationErrorDetail(fields=exc.errors()).model_dump(mode="json"),
+        request_id=_request_id(request),
+    )
 
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    body = ErrorResponse(
-        error=ErrorCode.INTERNAL_ERROR.value,
-        message="An unexpected error occurred",
+    return _json_error(
+        500,
+        ErrorCode.INTERNAL_ERROR,
+        "An unexpected error occurred",
         detail=str(exc) if DEBUG else None,
-    ).model_dump()
-    return JSONResponse(status_code=500, content=body)
+        request_id=_request_id(request),
+    )
 
 
-# ── Root ─────────────────────────────────────────────────────────────────────
+# ── Root ──────────────────────────────────────────────────────────────────────
 
 @app.get("/")
 async def root():
