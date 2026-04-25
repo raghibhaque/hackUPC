@@ -4,6 +4,7 @@ import type { ReconciliationResult } from '../../types'
 import { cn } from '@/lib/utils'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import ReconciliationStats from '../shared/ReconciliationStats'
+import ExportResults from '../shared/ExportResults'
 
 interface Props { result: ReconciliationResult }
 
@@ -166,6 +167,9 @@ export default function AnalyticsView({ result }: Props) {
           )}
         </div>
       </div>
+
+      {/* Export Results */}
+      <ExportResults result={result} />
 
       {/* Score breakdown */}
       <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-5">
