@@ -13,46 +13,105 @@ from functools import lru_cache
 
 
 SYNONYMS: dict[str, str] = {
+    # Identity
     "id": "id", "identifier": "id", "uid": "id", "guid": "id",
     "pk": "id", "key": "id", "oid": "id",
+    "no": "id", "nbr": "id", "nr": "id",
+    # People / accounts
     "user": "user", "account": "user", "member": "user",
     "author": "user", "owner": "user", "creator": "user",
     "person": "user", "profile": "user",
+    "usr": "user", "cust": "user", "custmr": "user", "clnt": "user",
+    "acct": "user",
+    # Names / labels
     "name": "name", "title": "name", "label": "name",
     "display_name": "name", "full_name": "name", "username": "name",
+    "nm": "name", "nme": "name", "lbl": "name",
+    # Slugs / handles
     "slug": "slug", "handle": "slug", "alias": "slug",
+    # Email
     "email": "email", "mail": "email", "email_address": "email",
+    # Content / body
     "content": "content", "body": "content", "text": "content",
     "html": "content", "markdown": "content", "description": "content",
     "excerpt": "content", "summary": "content", "abstract": "content",
+    "desc": "content", "cmt": "content", "txt": "content",
+    # Timestamps — creation
     "created_at": "created", "createdat": "created", "created_on": "created",
     "created": "created", "date_created": "created", "creation_date": "created",
     "date_added": "created", "insert_date": "created",
+    "cre": "created", "crt": "created", "ins": "created",
+    "ts": "created",
+    # Timestamps — update
     "updated_at": "updated", "updatedat": "updated", "updated_on": "updated",
     "updated": "updated", "modified": "updated", "date_modified": "updated",
     "last_modified": "updated", "modification_date": "updated",
     "edited_at": "updated", "changed_at": "updated",
+    "upd": "updated", "mod": "updated",
+    # Timestamps — deletion
     "deleted_at": "deleted", "deletedat": "deleted", "removed_at": "deleted",
+    # Generic date
+    "dt": "date", "dat": "date",
+    "lst": "last",
+    # Status / flags
     "status": "status", "state": "status", "active": "status",
     "enabled": "status", "visibility": "status",
+    "stat": "status", "sts": "status", "actv": "status", "flg": "status",
+    # Type / kind
     "type": "type", "kind": "type", "category": "type",
     "class": "type", "group": "type",
+    "cat": "category", "ctgr": "category",
+    # URLs / paths
     "url": "url", "uri": "url", "link": "url", "href": "url",
     "path": "url", "permalink": "url",
+    # Images
     "image": "image", "photo": "image", "avatar": "image",
     "picture": "image", "thumbnail": "image", "icon": "image",
     "cover": "image", "logo": "image", "feature_image": "image",
+    "img": "image", "pic": "image", "pict": "image",
+    # Counts / quantities
     "count": "count", "total": "count", "num": "count", "number": "count",
+    "qty": "count", "qnt": "count", "cnt": "count",
+    "tot": "count",
+    # Ordering / position
     "order": "order", "sort": "order", "position": "order",
     "rank": "order", "priority": "order", "sort_order": "order",
-    "menu_order": "order",
-    "parent": "parent", "parent_id": "parent",
+    "menu_order": "order", "srt": "order", "seq": "order",
+    # Parent / hierarchy
+    "parent": "parent", "parent_id": "parent", "prnt": "parent",
+    # Password / auth
     "password": "password", "pass": "password", "hash": "password",
     "password_hash": "password",
+    "pwd": "password", "pswd": "password", "pw": "password",
+    # Meta / settings
     "meta": "meta", "metadata": "meta", "settings": "meta",
     "options": "meta", "config": "meta", "preferences": "meta",
+    # Roles / permissions
     "role": "role", "permission": "role", "access": "role",
-    "capability": "role", "privilege": "role", 
+    "capability": "role", "privilege": "role",
+    # Prices / amounts
+    "price": "price", "cost": "price", "amount": "price",
+    "prc": "price", "cst": "price", "amt": "price",
+    # Address fields
+    "address": "address", "addr": "address", "adr": "address",
+    "city": "city", "cty": "city", "town": "city",
+    "country": "country", "ctry": "country", "cntry": "country",
+    "state": "state", "province": "state", "region": "state",
+    "st": "state",
+    "zip": "postal", "postcode": "postal", "postal_code": "postal",
+    "line": "line", "ln": "line",
+    # Shipping
+    "shipping": "shipping", "shp": "shipping", "ship": "shipping",
+    # Transactions / payments
+    "transaction": "transaction", "txn": "transaction", "trans": "transaction",
+    "payment": "payment", "pay": "payment", "pmt": "payment",
+    # Reviews / ratings
+    "rating": "rating", "rtng": "rating", "rtg": "rating",
+    "review": "review", "rev": "review",
+    # Reference numbers
+    "reference": "reference", "ref": "reference",
+    "percentage": "percentage", "pct": "percentage",
+    # WordPress-specific mappings (kept for existing demo)
     "post_content": "content", "post_title": "name",
     "post_excerpt": "content", "post_name": "slug",
     "post_status": "status", "post_type": "type",
@@ -67,41 +126,79 @@ SYNONYMS: dict[str, str] = {
     "display_name": "name", "user_status": "status",
     "option_name": "name", "option_value": "content",
     "term_id": "id", "term_group": "type",
-    "menu_order": "order", "comment_count": "count",
+    "comment_count": "count",
     "guid": "id", "post_mime_type": "type",
 }
 
 TABLE_SYNONYMS: dict[str, str] = {
+    # Users / accounts
     "users": "users", "accounts": "users", "members": "users",
     "authors": "users", "profiles": "users", "people": "users",
     "user": "users", "account": "users", "member": "users",
+    "customers": "users", "clients": "users", "accts": "users",
+    "usr": "users", "cust": "users",
+    # Posts / articles / content
     "posts": "posts", "articles": "posts", "entries": "posts",
     "stories": "posts", "content": "posts", "pages": "posts",
     "post": "posts", "article": "posts", "entry": "posts",
+    # Comments / replies
     "comments": "comments", "replies": "comments", "feedback": "comments",
     "responses": "comments", "discussions": "comments",
     "comment": "comments", "reply": "comments",
+    # Tags / labels
     "tags": "tags", "labels": "tags", "keywords": "tags",
     "terms": "tags", "term": "tags",
+    # Categories / topics
     "categories": "categories", "topics": "categories", "groups": "categories",
-    "term_taxonomy": "categories",
+    "term_taxonomy": "categories", "cat": "categories",
+    "product_categories": "categories",
+    # Post–tag relationships
     "posts_tags": "post_tags", "post_tags": "post_tags",
     "term_relationships": "post_tags",
+    # Roles / permissions
     "roles": "roles", "permissions": "roles",
     "roles_users": "user_roles", "user_roles": "user_roles",
+    # Settings / config
     "settings": "settings", "options": "settings", "config": "settings",
     "preferences": "settings", "meta": "settings",
+    # Sessions / tokens
     "sessions": "sessions", "tokens": "sessions", "auth": "sessions",
+    # Media / uploads
     "media": "media", "uploads": "media", "files": "media",
     "attachments": "media", "images": "media",
+    # Subscriptions
     "subscriptions": "subscriptions", "plans": "subscriptions",
     "memberships": "subscriptions",
+    # Newsletters
     "newsletters": "newsletters", "emails": "newsletters",
+    # Integrations / webhooks
     "integrations": "integrations", "webhooks": "integrations",
     "api_keys": "integrations",
+    # WordPress meta tables
     "usermeta": "user_meta", "postmeta": "post_meta",
     "commentmeta": "comment_meta",
+    # Links
     "links": "links", "bookmarks": "links",
+    # E-commerce: orders
+    "orders": "orders", "purchases": "orders",
+    "purchase_orders": "orders", "ord": "orders",
+    # E-commerce: products
+    "products": "products", "items": "products", "goods": "products",
+    "product_catalog": "products", "prod_catalog": "products",
+    "catalog": "products",
+    # E-commerce: order items / line items
+    "order_items": "order_items", "order_lines": "order_items",
+    "order_line_items": "order_items", "ord_items": "order_items",
+    "line_items": "order_items", "purchase_items": "order_items",
+    # E-commerce: addresses
+    "addresses": "addresses", "addr": "addresses", "locations": "addresses",
+    "customer_addresses": "addresses",
+    # E-commerce: payments / transactions
+    "payments": "payments", "pay_trans": "payments",
+    "payment_transactions": "payments",
+    # E-commerce: reviews
+    "reviews": "reviews", "ratings": "reviews",
+    "product_reviews": "reviews",
 }
 
 
@@ -162,12 +259,19 @@ def semantic_similarity_names(name_a: str, name_b: str) -> float:
     return min(jaccard, 1.0)
 
 
+# Prefixes stripped before table synonym/similarity lookup — case-insensitive.
+_TABLE_PREFIX_RE = re.compile(
+    r"^(wp_|ghost_|app_|tbl_?|t_|sys_|db_|dbo_|vw_|v_|fn_|sp_|tmp_)",
+    re.IGNORECASE,
+)
+
+
 def semantic_similarity_tables(name_a: str, name_b: str) -> float:
     if name_a == name_b:
         return 1.0
 
-    clean_a = re.sub(r"^(wp_|ghost_|app_|tbl_|t_)", "", name_a)
-    clean_b = re.sub(r"^(wp_|ghost_|app_|tbl_|t_)", "", name_b)
+    clean_a = _TABLE_PREFIX_RE.sub("", name_a).lower()
+    clean_b = _TABLE_PREFIX_RE.sub("", name_b).lower()
 
     if clean_a == clean_b:
         return 0.95
