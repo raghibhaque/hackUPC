@@ -8,6 +8,7 @@ import ConfidenceBadge from '../shared/ConfidenceBadge'
 import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
 import ColumnDetailsDrawer from './ColumnDetailsDrawer'
 import ConfidenceFilterSlider from './ConfidenceFilterSlider'
+import BulkActionBar from './BulkActionBar'
 
 interface Props {
   result: ReconciliationResult
@@ -19,6 +20,7 @@ export default function MappingTable({ result }: Props) {
   const [selectedMapping, setSelectedMapping] = useState<TableMapping | null>(null)
   const [reviewed, setReviewed] = useState<Set<number>>(new Set())
   const [minConfidence, setMinConfidence] = useState(0)
+  const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
 
   useKeyboardShortcuts({
@@ -80,8 +82,41 @@ export default function MappingTable({ result }: Props) {
     total_conflicts,
   } = result.summary
 
+  const handleBulkMarkReviewed = () => {
+    const newReviewed = new Set(reviewed)
+    selectedForBulk.forEach(i => newReviewed.add(i))
+    setReviewed(newReviewed)
+  }
+
+  const handleExportSelected = () => {
+    const selectedMappings = filtered.filter((_, i) => selectedForBulk.has(i))
+    const data = {
+      selected_mappings: selectedMappings.map(m => ({
+        source: m.table_a.name,
+        target: m.table_b.name,
+        confidence: m.confidence,
+      })),
+      count: selectedMappings.length,
+      timestamp: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `selected-mappings-${Date.now()}.json`
+    a.click()
+  }
+
   return (
     <div className="space-y-6">
+      <BulkActionBar
+        selectedCount={selectedForBulk.size}
+        totalCount={filtered.length}
+        onMarkReviewed={handleBulkMarkReviewed}
+        onExportSelected={handleExportSelected}
+        onClearSelection={() => setSelectedForBulk(new Set())}
+      />
+
       <ColumnDetailsDrawer
         mapping={selectedMapping}
         onClose={() => setSelectedMapping(null)}
@@ -181,6 +216,13 @@ export default function MappingTable({ result }: Props) {
               reviewed={reviewed.has(i)}
               onToggleReviewed={() => toggleReviewed(i)}
               searchTerm={search}
+              isBulkSelected={selectedForBulk.has(i)}
+              onBulkToggle={() => {
+                const newSet = new Set(selectedForBulk)
+                if (newSet.has(i)) newSet.delete(i)
+                else newSet.add(i)
+                setSelectedForBulk(newSet)
+              }}
             />
           ))}
         </div>
@@ -229,6 +271,8 @@ function Row({
   reviewed = false,
   onToggleReviewed,
   searchTerm = '',
+  isBulkSelected = false,
+  onBulkToggle,
 }: {
   mapping: TableMapping
   index: number
@@ -239,6 +283,8 @@ function Row({
   reviewed?: boolean
   onToggleReviewed?: () => void
   searchTerm?: string
+  isBulkSelected?: boolean
+  onBulkToggle?: () => void
 }) {
   const sourceTypes = Array.from(
     new Set(
@@ -271,6 +317,15 @@ function Row({
           onChange={() => onToggleReviewed?.()}
           className="mr-2 h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500"
           title="Mark as reviewed"
+        />
+
+        <input
+          type="checkbox"
+          checked={isBulkSelected}
+          onClick={(e) => e.stopPropagation()}
+          onChange={onBulkToggle}
+          className="h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500"
+          title="Select for bulk actions"
         />
 
         <span className="w-5 shrink-0 text-xs text-white/20">{index + 1}</span>
