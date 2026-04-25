@@ -11,6 +11,8 @@ import MigrationScaffold from './components/CodeGen/MigrationScaffold'
 import AnalyticsView from './components/Analytics/AnalyticsView'
 import ToastContainer from './components/shared/ToastContainer'
 import ShortcutsModal from './components/shared/ShortcutsModal'
+import ThemeToggle from './components/shared/ThemeToggle'
+import { useTheme } from './hooks/useTheme'
 
 type Tab = 'mappings' | 'analytics' | 'graph' | 'conflicts' | 'migration'
 
@@ -25,18 +27,29 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 export default function App() {
   const [result, setResult] = useState<ReconciliationResult | undefined>()
   const [activeTab, setActiveTab] = useState<Tab>('mappings')
+  const { theme } = useTheme()
 
   const handleReset = () => {
     setResult(undefined)
     setActiveTab('mappings')
   }
 
+  const isDark = theme === 'dark'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#06060e] via-[#0f0f1e] to-[#06060e] text-white/90">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDark
+        ? 'bg-gradient-to-br from-[#06060e] via-[#0f0f1e] to-[#06060e] text-white/90'
+        : 'bg-gradient-to-br from-slate-50 via-white to-slate-50 text-slate-900'
+    }`}>
       {/* Premium background layers */}
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(99,102,241,0.06),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_100%_100%,rgba(139,92,246,0.06),transparent)]" />
+        <div className={`absolute inset-0 transition-opacity duration-300 ${
+          isDark ? 'opacity-100' : 'opacity-30'
+        } bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(99,102,241,0.06),transparent)]`} />
+        <div className={`absolute inset-0 transition-opacity duration-300 ${
+          isDark ? 'opacity-100' : 'opacity-30'
+        } bg-[radial-gradient(ellipse_60%_80%_at_100%_100%,rgba(139,92,246,0.06),transparent)]`} />
       </div>
 
       <ToastContainer />
@@ -62,7 +75,11 @@ export default function App() {
             className="relative min-h-screen"
           >
             {/* Premium header */}
-            <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-gradient-to-b from-[#06060e]/95 to-[#06060e]/80 backdrop-blur-2xl">
+            <header className={`sticky top-0 z-50 transition-colors duration-300 ${
+              isDark
+                ? 'border-b border-white/[0.06] bg-gradient-to-b from-[#06060e]/95 to-[#06060e]/80'
+                : 'border-b border-slate-200 bg-gradient-to-b from-white/95 to-white/80'
+            } backdrop-blur-2xl`}>
               <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -70,30 +87,41 @@ export default function App() {
                   className="flex items-center gap-3"
                 >
                   <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 shadow-[0_0_12px_3px_rgba(129,140,248,0.3)]" />
-                  <span className="text-sm font-bold tracking-wide text-white">
+                  <span className={`text-sm font-bold tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     SchemaSync
                   </span>
-                  <span className="text-white/20">·</span>
-                  <span className="text-xs font-medium text-white/50">
+                  <span className={isDark ? 'text-white/20' : 'text-slate-300'}>·</span>
+                  <span className={`text-xs font-medium ${isDark ? 'text-white/50' : 'text-slate-500'}`}>
                     {result.summary.tables_matched} / {result.summary.tables_in_a} tables mapped
                   </span>
                 </motion.div>
 
-                <motion.button
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  onClick={handleReset}
-                  className="group relative overflow-hidden rounded-lg border border-white/[0.1] bg-white/[0.05] px-3.5 py-2 text-xs font-medium text-white/60 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80"
-                >
-                  <span className="relative flex items-center gap-1.5">
-                    ← New analysis
-                  </span>
-                </motion.button>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <motion.button
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={handleReset}
+                    className={`group relative overflow-hidden rounded-lg border px-3.5 py-2 text-xs font-medium transition-all ${
+                      isDark
+                        ? 'border-white/[0.1] bg-white/[0.05] text-white/60 hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80'
+                        : 'border-slate-300 bg-slate-100 text-slate-600 hover:border-slate-400 hover:bg-slate-200 hover:text-slate-800'
+                    }`}
+                  >
+                    <span className="relative flex items-center gap-1.5">
+                      ← New analysis
+                    </span>
+                  </motion.button>
+                </div>
               </div>
             </header>
 
             {/* Tab strip with icons */}
-            <div className="border-b border-white/[0.05] bg-gradient-to-b from-white/[0.02] to-transparent">
+            <div className={`transition-colors duration-300 ${
+              isDark
+                ? 'border-b border-white/[0.05] bg-gradient-to-b from-white/[0.02] to-transparent'
+                : 'border-b border-slate-200 bg-gradient-to-b from-slate-50 to-transparent'
+            }`}>
               <div className="mx-auto max-w-7xl px-6">
                 <div className="flex gap-1">
                   {TABS.map((tab, i) => (
@@ -105,8 +133,12 @@ export default function App() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`relative flex items-center gap-2 px-4 py-3.5 text-sm font-medium transition-all ${
                         activeTab === tab.id
-                          ? 'text-white'
-                          : 'text-white/50 hover:text-white/70'
+                          ? isDark
+                            ? 'text-white'
+                            : 'text-slate-900'
+                          : isDark
+                            ? 'text-white/50 hover:text-white/70'
+                            : 'text-slate-600 hover:text-slate-800'
                       }`}
                     >
                       {tab.icon}
