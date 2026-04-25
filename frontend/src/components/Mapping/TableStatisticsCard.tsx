@@ -1,14 +1,19 @@
 import { motion } from 'framer-motion'
-import { Database, Columns, AlertCircle } from 'lucide-react'
+import { Database, Columns, AlertCircle, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { MappingStats, getDataTypeCategory, getTypeColor } from '../../hooks/useTableStatistics'
+import type { TableMapping } from '../../types'
+import DetailedStatisticsModal from './DetailedStatisticsModal'
 
 interface Props {
   stats: MappingStats
   isExpanded?: boolean
+  mapping?: TableMapping
 }
 
-export default function TableStatisticsCard({ stats, isExpanded = false }: Props) {
+export default function TableStatisticsCard({ stats, isExpanded = false, mapping }: Props) {
+  const [showDetails, setShowDetails] = useState(false)
   const dataTypeEntries = [
     ...Object.entries(stats.sourceTable.dataTypes).slice(0, 3),
   ]
@@ -170,6 +175,25 @@ export default function TableStatisticsCard({ stats, isExpanded = false }: Props
           </div>
         </div>
       </div>
+
+      {/* Details Button */}
+      {mapping && (
+        <motion.button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-2 px-3 rounded-lg border border-white/[0.1] bg-white/[0.05] hover:bg-white/[0.08] hover:border-white/[0.15] text-xs font-medium text-white/70 hover:text-white/90 transition-all flex items-center justify-center gap-2 group"
+        >
+          <span>View Detailed Statistics</span>
+          <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+        </motion.button>
+      )}
+
+      {/* Detailed Statistics Modal */}
+      {mapping && (
+        <DetailedStatisticsModal mapping={mapping} isOpen={showDetails} onClose={() => setShowDetails(false)} />
+      )}
     </motion.div>
   )
 }

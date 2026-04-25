@@ -892,7 +892,7 @@ function Row({
             <div className="border-t border-white/[0.05] bg-gradient-to-b from-white/[0.03] to-white/[0.01] px-4 sm:px-5 pb-3 sm:pb-4 pt-3">
               {stats && (
                 <div className="mb-4">
-                  <TableStatisticsCard stats={stats} isExpanded={isExpanded} />
+                  <TableStatisticsCard stats={stats} isExpanded={isExpanded} mapping={mapping} />
                 </div>
               )}
 
