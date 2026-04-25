@@ -23,3 +23,6 @@ SEMANTIC_WEIGHT = float(os.getenv("SEMANTIC_WEIGHT", "0.55"))
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 USE_EMBEDDINGS = os.getenv("USE_EMBEDDINGS", "false").lower() == "true"
+
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(2 * 1024 * 1024)))  # 2 MB
+ALLOWED_EXTENSIONS = set(os.getenv("ALLOWED_EXTENSIONS", ".sql,.prisma,.json").split(","))

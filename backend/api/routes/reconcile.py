@@ -181,7 +181,7 @@ async def reconcile_async(req: ReconcileRequest, background_tasks: BackgroundTas
 
 
 @router.post("/async/demo", response_model=JobSubmitResponse)
-async def reconcile_async_demo(req: DemoRequest = DemoRequest(), background_tasks: BackgroundTasks = BackgroundTasks()):
+async def reconcile_async_demo(background_tasks: BackgroundTasks, req: DemoRequest = DemoRequest()):
     ghost_path = DEMO_DIR / "ghost_schema.sql"
     wp_path = DEMO_DIR / "wordpress_schema.sql"
     if not ghost_path.exists() or not wp_path.exists():
