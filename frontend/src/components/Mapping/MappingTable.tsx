@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, AlertTriangle, Search, X } from 'lucide-react'
 import type { ReconciliationResult, TableMapping } from '../../types'
@@ -24,6 +24,31 @@ export default function MappingTable({ result }: Props) {
   const [minConfidence, setMinConfidence] = useState(0)
   const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
+
+  // Generate a unique session key for this reconciliation result
+  const sessionKey = useMemo(() => {
+    const { tables_in_a, tables_in_b, tables_matched, average_confidence } = result.summary
+    return `schemahub:reviews:${tables_in_a}_${tables_in_b}_${tables_matched}_${average_confidence.toFixed(2)}`
+  }, [result.summary])
+
+  // Load reviewed state from localStorage on mount and when sessionKey changes
+  useEffect(() => {
+    const stored = localStorage.getItem(sessionKey)
+    if (stored) {
+      try {
+        const indices = JSON.parse(stored)
+        setReviewed(new Set(indices))
+      } catch (e) {
+        console.warn('Failed to parse stored reviews:', e)
+      }
+    }
+  }, [sessionKey])
+
+  // Save reviewed state to localStorage whenever it changes
+  useEffect(() => {
+    const indices = Array.from(reviewed)
+    localStorage.setItem(sessionKey, JSON.stringify(indices))
+  }, [reviewed, sessionKey])
 
   useKeyboardShortcuts({
     onSearchFocus: () => searchRef.current?.focus(),
