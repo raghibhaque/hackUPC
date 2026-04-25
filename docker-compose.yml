@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: schemasync-api:latest
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      DEBUG: "${DEBUG:-false}"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3000}"
+      MAX_REQUEST_BYTES: "${MAX_REQUEST_BYTES:-10485760}"
+      MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-2097152}"
+      TABLE_MATCH_THRESHOLD: "${TABLE_MATCH_THRESHOLD:-0.35}"
+      COLUMN_MATCH_THRESHOLD: "${COLUMN_MATCH_THRESHOLD:-0.30}"
+    volumes:
+      - uploads:/app/backend/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  uploads:
