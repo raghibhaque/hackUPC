@@ -7,6 +7,7 @@ from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDe
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ExportResponse
 from backend.core.codegen.dialects import SQLDialect
+from backend.core.codegen.transform import generate_sqlalchemy, generate_typescript
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.reconciliation.engine import ReconciliationEngine
 from backend.config import DEMO_DIR
@@ -153,4 +154,67 @@ async def export_messy_rollback_sql(req: MessyDemoRequest = MessyDemoRequest(), 
     return ExportResponse(
         sql=result.rollback_sql or "-- No rollback generated",
         filename=f"rollback_{r.target_name}_to_{r.source_name}.sql",
+    )
+
+
+# ── Transform code exports (#32) ──────────────────────────────────────────────
+
+_TRANSFORM_FORMAT_Q = Query("sqlalchemy", description="Output format: sqlalchemy | typescript")
+
+
+@router.post("/transform", responses=_ERR)
+async def export_transform_code(req: ReconcileRequest, format: str = _TRANSFORM_FORMAT_Q):
+    """Export migration code as Python (SQLAlchemy ORM) or TypeScript interfaces + mappers."""
+    if not parser.can_parse(req.source_sql):
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements",
+                  detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement"))
+    if not parser.can_parse(req.target_sql):
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements",
+                  detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement"))
+
+    source = parser.parse(req.source_sql, schema_name=req.source_name)
+    target = parser.parse(req.target_sql, schema_name=req.target_name)
+    result = engine.reconcile(source, target)
+
+    if format == "typescript":
+        code = generate_typescript(result, source, target)
+        media_type = "text/typescript"
+        filename = f"migration_{req.source_name}_to_{req.target_name}.ts"
+    else:
+        code = generate_sqlalchemy(result, source, target)
+        media_type = "text/x-python"
+        filename = f"migration_{req.source_name}_to_{req.target_name}.py"
+
+    return PlainTextResponse(
+        content=code,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/demo/transform", responses=_ERR)
+async def export_demo_transform(format: str = _TRANSFORM_FORMAT_Q):
+    """Transform code export for the Ghost → WordPress demo."""
+    ghost_path = DEMO_DIR / "ghost_schema.sql"
+    wp_path = DEMO_DIR / "wordpress_schema.sql"
+    if not ghost_path.exists() or not wp_path.exists():
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+
+    source = parser.parse(ghost_path.read_text(), schema_name="ghost")
+    target = parser.parse(wp_path.read_text(), schema_name="wordpress")
+    result = engine.reconcile(source, target)
+
+    if format == "typescript":
+        code = generate_typescript(result, source, target)
+        media_type = "text/typescript"
+        filename = "migration_ghost_to_wordpress.ts"
+    else:
+        code = generate_sqlalchemy(result, source, target)
+        media_type = "text/x-python"
+        filename = "migration_ghost_to_wordpress.py"
+
+    return PlainTextResponse(
+        content=code,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
