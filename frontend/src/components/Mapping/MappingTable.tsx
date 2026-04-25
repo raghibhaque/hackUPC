@@ -10,10 +10,12 @@ import ColumnDetailsDrawer from './ColumnDetailsDrawer'
 
 interface Props { result: ReconciliationResult }
 
-export default function MappingTable({ result }: Props) {
+
+// --- Mapping review state ---
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [search, setSearch] = useState('')
   const [selectedMapping, setSelectedMapping] = useState<TableMapping | null>(null)
+  const [reviewed, setReviewed] = useState<Set<number>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
 
   useKeyboardShortcuts({
@@ -71,6 +73,32 @@ export default function MappingTable({ result }: Props) {
         )}
       </div>
 
+      {/* Mapping Review Checklist */}
+      <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
+        <h3 className="text-xs font-semibold text-white/40 mb-2">Mapping Review Checklist</h3>
+        <ul className="space-y-2">
+          {result.table_mappings.map((m, i) => (
+            <li key={i} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={reviewed.has(i)}
+                onChange={() => {
+                  const s = new Set(reviewed)
+                  s.has(i) ? s.delete(i) : s.add(i)
+                  setReviewed(s)
+                }}
+                className="accent-indigo-500 h-4 w-4 rounded border border-white/15 bg-white/5"
+                id={`reviewed-${i}`}
+              />
+              <label htmlFor={`reviewed-${i}`} className="text-xs text-white/70 cursor-pointer">
+                {m.table_a.name} → {m.table_b.name}
+              </label>
+              {reviewed.has(i) && <span className="ml-1 text-xs text-green-400">Reviewed</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {/* Mappings */}
       {filtered.length === 0 ? (
         <Empty message={search ? 'No tables match your search' : 'No table mappings found'} />
@@ -85,6 +113,12 @@ export default function MappingTable({ result }: Props) {
               onToggle={() => toggle(i)}
               isLast={i === filtered.length - 1}
               onViewDetails={() => setSelectedMapping(m)}
+              reviewed={reviewed.has(i)}
+              onToggleReviewed={() => {
+                const s = new Set(reviewed)
+                s.has(i) ? s.delete(i) : s.add(i)
+                setReviewed(s)
+              }}
             />
           ))}
         </div>
@@ -118,24 +152,38 @@ export default function MappingTable({ result }: Props) {
   )
 }
 
-function Row({ mapping, index, isExpanded, onToggle, isLast, onViewDetails }: {
+function Row({ mapping, index, isExpanded, onToggle, isLast, onViewDetails, reviewed, onToggleReviewed }: {
   mapping: TableMapping
   index: number
   isExpanded: boolean
   onToggle: () => void
   isLast: boolean
   onViewDetails: () => void
+  reviewed?: boolean
+  onToggleReviewed?: () => void
 }) {
 
   return (
-    <div className={cn(!isLast && 'border-b border-white/[0.05]')}>
+    <div className={cn(!isLast && 'border-b border-white/[0.05]', reviewed && 'bg-green-900/10')}> 
       <motion.button
         onClick={onToggle}
         className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.03]"
         initial={false}
       >
+        {/* Review checkbox */}
+        <input
+          type="checkbox"
+          checked={!!reviewed}
+          onChange={e => {
+            e.stopPropagation();
+            onToggleReviewed && onToggleReviewed();
+          }}
+          className="accent-indigo-500 h-4 w-4 rounded border border-white/15 bg-white/5 mr-2"
+          title="Mark as reviewed"
+        />
         {/* Index */}
         <span className="w-5 shrink-0 text-xs text-white/20">{index + 1}</span>
+        {reviewed && <span className="ml-1 text-xs text-green-400">Reviewed</span>}
 
         {/* Source → Target */}
         <div className="flex flex-1 items-center gap-3 min-w-0">
