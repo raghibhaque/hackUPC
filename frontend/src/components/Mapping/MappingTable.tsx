@@ -11,6 +11,7 @@ import { useFilterPresets } from '../../hooks/useFilterPresets'
 import { useCustomRules } from '../../hooks/useCustomRules'
 import { useProgressMetrics } from '../../hooks/useProgressMetrics'
 import { useConflictResolutions } from '../../hooks/useConflictResolutions'
+import { useConflictPatterns } from '../../hooks/useConflictPatterns'
 import { useTableStatistics } from '../../hooks/useTableStatistics'
 import { useReviewState } from '../../hooks/useReviewState'
 import { useReviewFilters } from '../../hooks/useReviewFilters'
@@ -30,6 +31,7 @@ import TemplateManager from './TemplateManager'
 import HistoryPanel from './HistoryPanel'
 import ExportDrawer from './ExportDrawer'
 import UndoRedoBar from './UndoRedoBar'
+import BatchConflictResolutionPanel from './BatchConflictResolutionPanel'
 import TableStatisticsCard from './TableStatisticsCard'
 import SchemaSummaryCard from './SchemaSummaryCard'
 import StatisticsExportPanel from './StatisticsExportPanel'
@@ -60,6 +62,7 @@ export default function MappingTable({ result }: Props) {
   const [showStatisticsGuide, setShowStatisticsGuide] = useState(false)
   const [showRules, setShowRules] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showConflictResolution, setShowConflictResolution] = useState(false)
   const [activePresetId, setActivePresetId] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingMappingIndex, setEditingMappingIndex] = useState<number | null>(null)
@@ -70,6 +73,9 @@ export default function MappingTable({ result }: Props) {
 
   // Get table statistics
   const tableStats = useTableStatistics(result)
+
+  // Get conflict patterns for batch resolution
+  const conflictPatterns = useConflictPatterns(result.table_mappings)
 
   // Create a hash for the current schema to use as a template namespace
   const schemaHash = useMemo(() => {
@@ -463,6 +469,17 @@ export default function MappingTable({ result }: Props) {
 
         <div className="h-6 w-px bg-white/[0.1]" />
 
+        {conflictPatterns.length > 0 && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowConflictResolution(!showConflictResolution)}
+            className="px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 text-xs font-medium transition-colors"
+          >
+            ⚡ Batch Resolve ({conflictPatterns.length}) {showConflictResolution ? '▼' : '▶'}
+          </motion.button>
+        )}
+
         <div className="flex items-center gap-2 flex-wrap">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -521,6 +538,39 @@ export default function MappingTable({ result }: Props) {
                 Show only mappings with conflicts
               </label>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Batch Conflict Resolution Panel */}
+      <AnimatePresence>
+        {showConflictResolution && conflictPatterns.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/[0.03] p-4"
+          >
+            <BatchConflictResolutionPanel
+              patterns={conflictPatterns}
+              onApplyResolution={(patternId, resolution) => {
+                addHistoryEntry({
+                  actionType: 'suggestion_accepted',
+                  mappingId: patternId,
+                  tableName: 'Batch Resolution',
+                  description: `Applied batch resolution for pattern: ${resolution}`,
+                })
+              }}
+              onApplyAll={(resolutions) => {
+                addHistoryEntry({
+                  actionType: 'suggestion_accepted',
+                  mappingId: 'batch-all',
+                  tableName: 'Batch Resolution',
+                  description: `Applied batch resolutions for ${Object.keys(resolutions).length} conflict patterns`,
+                })
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
