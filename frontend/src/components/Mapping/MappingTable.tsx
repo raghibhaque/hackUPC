@@ -30,6 +30,7 @@ import TableStatisticsCard from './TableStatisticsCard'
 import SchemaSummaryCard from './SchemaSummaryCard'
 import StatisticsExportPanel from './StatisticsExportPanel'
 import StatisticsDashboard from './StatisticsDashboard'
+import StatisticsGuide from './StatisticsGuide'
 
 interface Props {
   result: ReconciliationResult
@@ -47,6 +48,7 @@ export default function MappingTable({ result }: Props) {
   const [showHistory, setShowHistory] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showStatisticsExport, setShowStatisticsExport] = useState(false)
+  const [showStatisticsGuide, setShowStatisticsGuide] = useState(false)
   const [showRules, setShowRules] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [activePresetId, setActivePresetId] = useState<string | null>(null)
@@ -434,6 +436,19 @@ export default function MappingTable({ result }: Props) {
               ⚙️ Preferences
             </span>
           </motion.button>
+
+          <motion.button
+            type="button"
+            onClick={() => setShowStatisticsGuide(!showStatisticsGuide)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative overflow-hidden rounded-lg border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/60 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label={showStatisticsGuide ? 'Hide statistics guide' : 'Show statistics guide'}
+          >
+            <span className="relative flex items-center gap-1.5">
+              ❓ Help
+            </span>
+          </motion.button>
         </div>
       </div>
 
@@ -462,6 +477,11 @@ export default function MappingTable({ result }: Props) {
         result={result}
         isOpen={showStatisticsExport}
         onClose={() => setShowStatisticsExport(false)}
+      />
+
+      <StatisticsGuide
+        isOpen={showStatisticsGuide}
+        onClose={() => setShowStatisticsGuide(false)}
       />
 
       <AnimatePresence>
