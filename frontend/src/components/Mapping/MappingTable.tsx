@@ -4,6 +4,8 @@ import { ChevronDown, ArrowRight, AlertTriangle, Search, X } from 'lucide-react'
 import type { ReconciliationResult, TableMapping } from '../../types'
 import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import ConfidenceBadge from '../shared/ConfidenceBadge'
+import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
 
 interface Props { result: ReconciliationResult }
 
@@ -112,8 +114,6 @@ function Row({ mapping, index, isExpanded, onToggle, isLast }: {
   onToggle: () => void
   isLast: boolean
 }) {
-  const pct = Math.round(mapping.confidence * 100)
-  const label = mapping.confidence_label
 
   return (
     <div className={cn(!isLast && 'border-b border-white/[0.05]')}>
@@ -133,8 +133,18 @@ function Row({ mapping, index, isExpanded, onToggle, isLast }: {
         </div>
 
         {/* Confidence */}
-        <div className="flex shrink-0 items-center gap-3">
-          <ConfBar pct={pct} label={label} />
+        <div className="flex shrink-0 items-center gap-2.5">
+          <div className="group relative">
+            <ConfidenceBadge value={mapping.confidence} />
+            <div className="pointer-events-none absolute -right-2 -top-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+              <ConfidenceTooltip
+                structuralScore={mapping.structural_score}
+                semanticScore={mapping.semantic_score}
+                combinedScore={mapping.confidence}
+                matchReason={mapping.column_mappings[0]?.mapping_type}
+              />
+            </div>
+          </div>
           <ChevronDown className={cn('h-4 w-4 text-white/25 transition-transform', isExpanded && 'rotate-180')} />
         </div>
       </motion.button>
@@ -185,31 +195,6 @@ function TableName({ name, cols, color }: { name: string; cols: number; color: '
         {name}
       </p>
       <p className="text-xs text-white/25">{cols} cols</p>
-    </div>
-  )
-}
-
-function ConfBar({ pct, label }: { pct: number; label: string }) {
-  const colors = {
-    HIGH:   { bar: 'bg-emerald-400', text: 'text-emerald-300' },
-    MEDIUM: { bar: 'bg-amber-400',   text: 'text-amber-300'   },
-    LOW:    { bar: 'bg-rose-400',    text: 'text-rose-300'    },
-  }
-  const c = colors[label as keyof typeof colors] ?? colors.LOW
-
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="h-1 w-16 overflow-hidden rounded-full bg-white/[0.06]">
-        <motion.div
-          className={cn('h-full rounded-full', c.bar)}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-        />
-      </div>
-      <span className={cn('w-8 text-right text-xs font-semibold tabular-nums', c.text)}>
-        {pct}%
-      </span>
     </div>
   )
 }

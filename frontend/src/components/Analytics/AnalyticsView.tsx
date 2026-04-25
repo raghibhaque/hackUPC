@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
-import { TrendingUp, AlertCircle, Zap } from 'lucide-react'
+import { TrendingUp, AlertCircle, Zap, BarChart3 } from 'lucide-react'
 import type { ReconciliationResult } from '../../types'
 import { cn } from '@/lib/utils'
+import ConfidenceBadge from '../shared/ConfidenceBadge'
 
 interface Props { result: ReconciliationResult }
 
@@ -162,13 +163,61 @@ export default function AnalyticsView({ result }: Props) {
         </div>
       </div>
 
+      {/* Score breakdown */}
+      <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-5">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white/80">
+          <BarChart3 className="h-4 w-4" />
+          Accuracy Score Composition
+        </h3>
+        <div className="space-y-4">
+          {/* Structural vs Semantic */}
+          <div className="grid grid-cols-2 gap-4">
+            <ScoreBox
+              label="Structural Accuracy"
+              value={(result.table_mappings.reduce((s, m) => s + m.structural_score, 0) / result.table_mappings.length).toFixed(2)}
+              help="Table structure similarity (keys, columns, types)"
+              color="indigo"
+            />
+            <ScoreBox
+              label="Semantic Accuracy"
+              value={(result.table_mappings.reduce((s, m) => s + m.semantic_score, 0) / result.table_mappings.length).toFixed(2)}
+              help="Name & meaning similarity"
+              color="violet"
+            />
+          </div>
+
+          {/* Top matches */}
+          <div className="pt-3 border-t border-white/[0.06]">
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-white/40">Highest confidence matches</p>
+            <div className="space-y-1.5">
+              {result.table_mappings
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 3)
+                .map((m, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center justify-between text-xs"
+                  >
+                    <span className="text-white/40">
+                      {m.table_a.name} → {m.table_b.name}
+                    </span>
+                    <ConfidenceBadge value={m.confidence} showPercent={true} />
+                  </motion.div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Summary */}
       <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-5">
         <p className="text-xs leading-relaxed text-white/35">
           <Zap className="mb-1 inline-block h-3 w-3 text-amber-400" /> This reconciliation matched{' '}
           <span className="font-semibold text-white/50">{summary.tables_matched} of {summary.tables_in_a}</span>{' '}
           source tables with an average confidence of{' '}
-          <span className="font-semibold text-white/50">{(avgConfidence * 100).toFixed(0)}%</span>. Review the{' '}
+          <span className="font-semibold text-white/50">{(avgConfidence * 100).toFixed(1)}%</span>. Review the{' '}
           <span className="font-semibold text-white/50">Conflicts</span> tab to address issues before migration.
         </p>
       </div>
@@ -218,6 +267,20 @@ function ProgressBar({ pct, color }: { pct: number; color: string }) {
         animate={{ width: `${pct}%` }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       />
+    </div>
+  )
+}
+
+function ScoreBox({ label, value, help, color }: { label: string; value: string; help: string; color: 'indigo' | 'violet' }) {
+  const colorClass = color === 'indigo'
+    ? 'border-indigo-500/20 bg-indigo-500/[0.06] text-indigo-300'
+    : 'border-violet-500/20 bg-violet-500/[0.06] text-violet-300'
+
+  return (
+    <div className={cn('rounded-lg border p-3 text-center', colorClass)} title={help}>
+      <p className="text-[10px] uppercase tracking-wider opacity-60">{label}</p>
+      <p className="mt-1.5 text-2xl font-bold tabular-nums">{value}</p>
+      <p className="mt-1 text-[10px] opacity-50">{help}</p>
     </div>
   )
 }
