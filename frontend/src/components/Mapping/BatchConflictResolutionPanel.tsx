@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, CheckCircle2, AlertCircle, Zap } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { CheckCircle2, AlertCircle, Zap } from 'lucide-react'
 import type { ConflictPattern } from '../../hooks/useConflictPatterns'
 
 interface Props {

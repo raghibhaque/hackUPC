@@ -46,7 +46,7 @@ export default function AutoDiscoveryDashboard({
       icon: <AlertCircle className="h-5 w-5" />,
       color: 'text-amber-300',
       bgColor: 'from-amber-500/20 to-amber-500/10',
-      priority: unreviewed > 10 ? 'critical' : 'high',
+      priority: (unreviewed > 10 ? 'critical' : 'high') as const,
       action: 'Review Now',
     },
     {
@@ -57,7 +57,7 @@ export default function AutoDiscoveryDashboard({
       icon: <Zap className="h-5 w-5" />,
       color: 'text-rose-300',
       bgColor: 'from-rose-500/20 to-rose-500/10',
-      priority: conflictCount > 5 ? 'critical' : 'high',
+      priority: (conflictCount > 5 ? 'critical' : 'high') as const,
       action: 'Resolve Conflicts',
     },
     {
@@ -68,7 +68,7 @@ export default function AutoDiscoveryDashboard({
       icon: <TrendingUp className="h-5 w-5" />,
       color: 'text-indigo-300',
       bgColor: 'from-indigo-500/20 to-indigo-500/10',
-      priority: typeConversionsNeeded > 5 ? 'high' : 'medium',
+      priority: (typeConversionsNeeded > 5 ? 'high' : 'medium') as const,
       action: 'Define Conversions',
     },
     {
@@ -79,7 +79,7 @@ export default function AutoDiscoveryDashboard({
       icon: <AlertCircle className="h-5 w-5" />,
       color: 'text-amber-300',
       bgColor: 'from-amber-500/20 to-amber-500/10',
-      priority: lowConfidenceMappings > 3 ? 'high' : 'medium',
+      priority: (lowConfidenceMappings > 3 ? 'high' : 'medium') as const,
       action: 'Review Quality',
     },
   ].filter(card => card.count > 0)

@@ -129,6 +129,13 @@ export interface ReconciliationResult {
   unmatched_tables_a: string[];
   unmatched_tables_b: string[];
   migration_scaffold: string;
+  metadata?: {
+    execution_time_ms?: number;
+    algorithm?: string;
+    confidence_model?: string;
+    precision_score?: number;
+    recall_score?: number;
+  };
 }
 
 // API request/response types

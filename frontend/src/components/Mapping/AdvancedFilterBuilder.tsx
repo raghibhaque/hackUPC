@@ -152,13 +152,13 @@ export default function AdvancedFilterBuilder({ filters, onFiltersChange, onAppl
                     min="0"
                     max="1"
                     step="0.1"
-                    value={filter.value}
+                    value={typeof filter.value === 'number' ? filter.value : 0}
                     onChange={(e) => updateFilter(filter.id, { value: parseFloat(e.target.value) })}
                     className="px-2 py-2 rounded bg-white/[0.05] border border-white/[0.1] text-white/70 text-xs font-medium w-20"
                   />
                 ) : (
                   <select
-                    value={filter.value}
+                    value={String(filter.value)}
                     onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
                     className="px-2 py-2 rounded bg-white/[0.05] border border-white/[0.1] text-white/70 text-xs font-medium"
                   >

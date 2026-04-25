@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Lightbulb, Check, X, ArrowRight } from 'lucide-react'
 import type { TableMapping } from '../../types'
 import { useSmartSuggestions } from '../../hooks/useSmartSuggestions'
