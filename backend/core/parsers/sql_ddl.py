@@ -48,8 +48,8 @@ class SQLDDLParser(BaseParser):
         blocks = []
         pattern = re.compile(
             r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
-            r"[`\"\[]?\w+[`\"\]]?\s*\("
-            , re.I
+            r"(?:[`\"\[]?\w+[`\"\]]?\s*\.\s*)?[`\"\[]?\w+[`\"\]]?\s*\(",
+            re.I,
         )
 
         for m in pattern.finditer(content):
@@ -76,8 +76,8 @@ class SQLDDLParser(BaseParser):
     def _parse_create_table(self, block: str) -> Table | None:
         m = re.match(
             r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
-            r"[`\"\[]?(\w+)[`\"\]]?\s*\(",
-            block, re.I
+            r"(?:[`\"\[]?\w+[`\"\]]?\s*\.\s*)?[`\"\[]?(\w+)[`\"\]]?\s*\(",
+            block, re.I,
         )
         if not m:
             return None
@@ -166,6 +166,10 @@ class SQLDDLParser(BaseParser):
         raw_type = m.group(2).strip()
         rest = defn[m.end():].strip()
 
+        # Skip generated / computed columns
+        if re.search(r"\bGENERATED\b|\bAS\s*\(", rest, re.I):
+            return None
+
         col_type = normalise_type(raw_type)
         max_length = extract_length(raw_type)
         precision, scale = extract_precision_scale(raw_type)
@@ -217,13 +221,14 @@ class SQLDDLParser(BaseParser):
             col.constraints.append(ConstraintType.DEFAULT)
 
         rm = re.search(
-            r"REFERENCES\s+[`\"\[]?(\w+)[`\"\]]?\s*\(\s*[`\"\[]?(\w+)[`\"\]]?\s*\)",
-            rest, re.I
+            r"REFERENCES\s+(?:[`\"\[]?\w+[`\"\]]?\s*\.\s*)?[`\"\[]?(\w+)[`\"\]]?"
+            r"(?:\s*\(\s*[`\"\[]?(\w+)[`\"\]]?\s*\))?",
+            rest, re.I,
         )
         if rm:
             fk = ForeignKey(
                 target_table=normalise_name(rm.group(1)),
-                target_column=normalise_name(rm.group(2)),
+                target_column=normalise_name(rm.group(2) or "id"),
             )
             self._parse_fk_actions(rest[rm.end():], fk)
             col.foreign_key = fk
@@ -283,23 +288,29 @@ class SQLDDLParser(BaseParser):
             self._parse_foreign_key_constraint(defn, table)
 
     def _parse_foreign_key_constraint(self, defn: str, table: Table) -> None:
+        # Match: FOREIGN KEY (col [, col2]) REFERENCES table [(ref_col [, ref_col2])]
         m = re.search(
-            r"FOREIGN\s+KEY\s*\(\s*[`\"\[]?(\w+)[`\"\]]?\s*\)\s*"
-            r"REFERENCES\s+[`\"\[]?(\w+)[`\"\]]?\s*\(\s*[`\"\[]?(\w+)[`\"\]]?\s*\)",
-            defn, re.I
+            r"FOREIGN\s+KEY\s*\(\s*([^)]+)\)\s*"
+            r"REFERENCES\s+(?:[`\"\[]?\w+[`\"\]]?\s*\.\s*)?[`\"\[]?(\w+)[`\"\]]?"
+            r"(?:\s*\(\s*([^)]+)\s*\))?",
+            defn, re.I,
         )
         if not m:
             return
 
-        col_name = normalise_name(m.group(1))
+        src_cols = [normalise_name(c.strip()) for c in m.group(1).split(",")]
         target_table = normalise_name(m.group(2))
-        target_col = normalise_name(m.group(3))
+        ref_cols_raw = m.group(3) or "id"
+        ref_cols = [normalise_name(c.strip()) for c in ref_cols_raw.split(",")]
 
-        fk = ForeignKey(target_table=target_table, target_column=target_col)
-        self._parse_fk_actions(defn[m.end():], fk)
-
-        col = table.get_column(col_name)
-        if col:
+        tail = defn[m.end():]
+        for i, col_name in enumerate(src_cols):
+            col = table.get_column(col_name)
+            if col is None:
+                continue
+            target_col = ref_cols[i] if i < len(ref_cols) else ref_cols[0]
+            fk = ForeignKey(target_table=target_table, target_column=target_col)
+            self._parse_fk_actions(tail, fk)
             col.foreign_key = fk
 
     def _parse_fk_actions(self, rest: str, fk: ForeignKey) -> None:
