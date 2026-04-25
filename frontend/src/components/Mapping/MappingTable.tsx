@@ -244,6 +244,25 @@ function Row({ mapping, index, isExpanded, onToggle, isLast, onViewDetails, revi
             className="overflow-hidden"
           >
             <div className="border-t border-white/[0.05] bg-white/[0.015] px-5 pb-4 pt-3">
+              {/* Table statistics */}
+              <div className="flex flex-wrap gap-4 mb-2">
+                <div>
+                  <span className="text-xs text-white/30">Source columns:</span>
+                  <span className="ml-1 text-xs text-white/60 font-mono">{mapping.table_a.columns.length}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-white/30">Target columns:</span>
+                  <span className="ml-1 text-xs text-white/60 font-mono">{mapping.table_b.columns.length}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-white/30">Source types:</span>
+                  <span className="ml-1 text-xs text-white/60 font-mono">{Array.from(new Set(mapping.table_a.columns.map(c => c.data_type.base_type))).filter(Boolean).join(', ')}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-white/30">Target types:</span>
+                  <span className="ml-1 text-xs text-white/60 font-mono">{Array.from(new Set(mapping.table_b.columns.map(c => c.data_type.base_type))).filter(Boolean).join(', ')}</span>
+                </div>
+              </div>
               <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/25">
                 Column mappings · {mapping.column_mappings.length}
               </p>
