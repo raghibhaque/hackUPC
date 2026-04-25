@@ -22,3 +22,9 @@ class DemoRequest(BaseModel):
     """Use built-in Ghost + WordPress schemas."""
     source_name: str = "ghost"
     target_name: str = "wordpress"
+
+
+class MessyDemoRequest(BaseModel):
+    """Use built-in messy legacy vs modern e-commerce schemas."""
+    source_name: str = "legacy_shop"
+    target_name: str = "modern_shop"

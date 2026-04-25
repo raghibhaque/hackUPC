@@ -7,7 +7,7 @@ import re
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from backend.api.errors import ErrorCode, api_error
-from backend.api.models.requests import ReconcileRequest, DemoRequest
+from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ReconcileResponse, JobSubmitResponse, JobStatusResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.parsers.prisma import PrismaParser
@@ -220,6 +220,78 @@ async def reconcile_stream_demo(req: DemoRequest = DemoRequest()):
 
     source = parser.parse(ghost_path.read_text(), schema_name=req.source_name)
     target = parser.parse(wp_path.read_text(), schema_name=req.target_name)
+    return StreamingResponse(stream_reconciliation(source, target), media_type="text/event-stream", headers=_SSE_HEADERS)
+
+
+# ── Messy demo endpoints (legacy abbreviated vs modern verbose e-commerce) ────
+
+def _messy_schemas(req: MessyDemoRequest):
+    legacy_path = DEMO_DIR / "messy_legacy_schema.sql"
+    modern_path = DEMO_DIR / "messy_modern_schema.sql"
+    if not legacy_path.exists() or not modern_path.exists():
+        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
+    source = parser.parse(legacy_path.read_text(), schema_name=req.source_name)
+    target = parser.parse(modern_path.read_text(), schema_name=req.target_name)
+    return source, target
+
+
+@router.post("/messy", response_model=ReconcileResponse)
+async def reconcile_messy(req: MessyDemoRequest = MessyDemoRequest()):
+    source, target = _messy_schemas(req)
+    result = engine.reconcile(source, target)
+    return ReconcileResponse(status="complete", result=result.to_dict())
+
+
+@router.post("/messy/stats")
+async def reconcile_messy_stats(req: MessyDemoRequest = MessyDemoRequest()):
+    source, target = _messy_schemas(req)
+    result = engine.reconcile(source, target)
+
+    high   = [tm for tm in result.table_mappings if tm.combined_score >= 0.8]
+    medium = [tm for tm in result.table_mappings if 0.5 <= tm.combined_score < 0.8]
+    low    = [tm for tm in result.table_mappings if tm.combined_score < 0.5]
+
+    type_c     = [c for c in result.conflicts if c.conflict_type == "type_mismatch"]
+    nullable_c = [c for c in result.conflicts if c.conflict_type == "nullable_mismatch"]
+    length_c   = [c for c in result.conflicts if c.conflict_type == "length_mismatch"]
+
+    return {
+        "status": "complete",
+        "elapsed_seconds": result.elapsed_seconds,
+        "source": source.to_dict(),
+        "target": target.to_dict(),
+        "summary": result.summary,
+        "confidence_breakdown": {"high": len(high), "medium": len(medium), "low": len(low)},
+        "conflict_breakdown": {
+            "type_mismatch":     len(type_c),
+            "nullable_mismatch": len(nullable_c),
+            "length_mismatch":   len(length_c),
+            "other": len(result.conflicts) - len(type_c) - len(nullable_c) - len(length_c),
+        },
+        "source_stats": {
+            "tables": len(source.tables),
+            "total_columns": sum(len(t.columns) for t in source.tables),
+            "total_foreign_keys": sum(len(t.foreign_keys) for t in source.tables),
+        },
+        "target_stats": {
+            "tables": len(target.tables),
+            "total_columns": sum(len(t.columns) for t in target.tables),
+            "total_foreign_keys": sum(len(t.foreign_keys) for t in target.tables),
+        },
+    }
+
+
+@router.post("/async/messy", response_model=JobSubmitResponse)
+async def reconcile_async_messy(background_tasks: BackgroundTasks, req: MessyDemoRequest = MessyDemoRequest()):
+    source, target = _messy_schemas(req)
+    job = create_job()
+    background_tasks.add_task(run_reconciliation_job, job.id, source, target)
+    return JobSubmitResponse(job_id=job.id)
+
+
+@router.post("/stream/messy")
+async def reconcile_stream_messy(req: MessyDemoRequest = MessyDemoRequest()):
+    source, target = _messy_schemas(req)
     return StreamingResponse(stream_reconciliation(source, target), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 

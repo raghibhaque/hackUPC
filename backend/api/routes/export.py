@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
 from backend.api.errors import ErrorCode, api_error
-from backend.api.models.requests import ReconcileRequest, DemoRequest
+from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
 from backend.api.models.responses import ExportResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.reconciliation.engine import ReconciliationEngine
@@ -103,4 +103,43 @@ async def export_demo_rollback_sql():
         content=result.rollback_sql or "-- No rollback generated",
         media_type="text/sql",
         headers={"Content-Disposition": "attachment; filename=rollback_wordpress_to_ghost.sql"},
+    )
+
+
+# ── Messy demo exports ────────────────────────────────────────────────────────
+
+def _messy_result(req: MessyDemoRequest):
+    legacy_path = DEMO_DIR / "messy_legacy_schema.sql"
+    modern_path = DEMO_DIR / "messy_modern_schema.sql"
+    if not legacy_path.exists() or not modern_path.exists():
+        raise api_error(500, ErrorCode.INTERNAL_ERROR, "Messy demo schema files not found")
+    source = parser.parse(legacy_path.read_text(), schema_name=req.source_name)
+    target = parser.parse(modern_path.read_text(), schema_name=req.target_name)
+    return engine.reconcile(source, target), req
+
+
+@router.get("/messy/sql", response_model=ExportResponse)
+async def export_messy_sql(req: MessyDemoRequest = MessyDemoRequest()):
+    result, r = _messy_result(req)
+    return ExportResponse(
+        sql=result.migration_sql or "-- No migration generated",
+        filename=f"migration_{r.source_name}_to_{r.target_name}.sql",
+    )
+
+
+@router.get("/messy/alter", response_model=ExportResponse)
+async def export_messy_alter_sql(req: MessyDemoRequest = MessyDemoRequest()):
+    result, r = _messy_result(req)
+    return ExportResponse(
+        sql=result.migration_alter_sql or "-- No ALTER TABLE migration generated",
+        filename=f"migration_alter_{r.source_name}_to_{r.target_name}.sql",
+    )
+
+
+@router.get("/messy/rollback", response_model=ExportResponse)
+async def export_messy_rollback_sql(req: MessyDemoRequest = MessyDemoRequest()):
+    result, r = _messy_result(req)
+    return ExportResponse(
+        sql=result.rollback_sql or "-- No rollback generated",
+        filename=f"rollback_{r.target_name}_to_{r.source_name}.sql",
     )
