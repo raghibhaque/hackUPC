@@ -14,6 +14,7 @@ import { useConflictResolutions } from '../../hooks/useConflictResolutions'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import ProgressDashboard from './ProgressDashboard'
 import PerformanceMetrics from './PerformanceMetrics'
+import SettingsPanel from './SettingsPanel'
 import FilterPresetsUI from './FilterPresetsUI'
 import RulesUI from './RulesUI'
 import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
@@ -41,6 +42,7 @@ export default function MappingTable({ result }: Props) {
   const [showHistory, setShowHistory] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showRules, setShowRules] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [activePresetId, setActivePresetId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -388,8 +390,25 @@ export default function MappingTable({ result }: Props) {
               ⚙️ Rules {rules.length > 0 && `(${rules.length})`}
             </span>
           </motion.button>
+          <motion.button
+            type="button"
+            onClick={() => setShowSettings(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative overflow-hidden rounded-lg border border-white/[0.1] bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/60 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label="Open settings"
+          >
+            <span className="relative flex items-center gap-1.5">
+              ⚙️ Preferences
+            </span>
+          </motion.button>
         </div>
       </div>
+
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
 
       <MappingDiffView
         mapping={diffMapping}
