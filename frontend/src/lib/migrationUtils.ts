@@ -2,7 +2,7 @@
  * Migration Utilities — SQL builders and type conversion helpers
  */
 
-import type { ColumnMapping, TableMapping, ReconciliationResult, Column } from '../types'
+import type { TableMapping, ReconciliationResult, Column } from '../types'
 
 export const TYPE_CONVERSION_MAP: Record<string, Record<string, string>> = {
   varchar: {
@@ -96,17 +96,6 @@ export function buildColumnDDL(col: Column): string {
   const typeStr = col.data_type?.base_type || 'TEXT'
   parts.push(typeStr)
 
-  // Add constraints
-  if (col.constraints?.includes('PRIMARY KEY')) {
-    parts.push('PRIMARY KEY')
-  }
-  if (!col.constraints?.includes('NULL') && !col.constraints?.includes('PRIMARY KEY')) {
-    parts.push('NOT NULL')
-  }
-  if (col.constraints?.includes('UNIQUE')) {
-    parts.push('UNIQUE')
-  }
-
   return parts.join(' ')
 }
 
@@ -136,17 +125,6 @@ export function buildCreateTableSQL(tableMapping: TableMapping): string {
 
   const colDefs = tableMapping.table_b.columns.map((col) => {
     const parts = [`    ${col.name}`, col.data_type?.base_type || 'TEXT']
-
-    if (col.constraints?.includes('PRIMARY KEY')) {
-      parts.push('PRIMARY KEY')
-    }
-    if (!col.constraints?.includes('NULL')) {
-      parts.push('NOT NULL')
-    }
-    if (col.constraints?.includes('UNIQUE')) {
-      parts.push('UNIQUE')
-    }
-
     return parts.join(' ')
   })
 

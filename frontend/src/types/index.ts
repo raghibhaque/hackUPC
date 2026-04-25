@@ -124,11 +124,14 @@ export interface ReconciliationResult {
     average_confidence: number;
     total_conflicts: number;
     critical_conflicts: number;
+    columns_matched?: number;
   };
   table_mappings: TableMapping[];
   unmatched_tables_a: string[];
   unmatched_tables_b: string[];
   migration_scaffold: string;
+  migration_alter_sql?: string;
+  rollback_sql?: string;
   metadata?: {
     execution_time_ms?: number;
     algorithm?: string;

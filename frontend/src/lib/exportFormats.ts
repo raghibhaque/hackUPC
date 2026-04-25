@@ -3,9 +3,10 @@ import { estimateMigrationComplexity } from './migrationUtils'
 
 function getMetadataHeader(result: ReconciliationResult): string[] {
   const complexity = estimateMigrationComplexity(result)
+  const columnCount = result.summary.columns_matched || 0
   const lines: string[] = [
     '-- ═══════════════════════════════════════════════════════════',
-    `-- SchemaSync Migration: ${result.summary.tables_matched} tables, ${result.summary.columns_matched} columns`,
+    `-- SchemaSync Migration: ${result.summary.tables_matched} tables${columnCount > 0 ? `, ${columnCount} columns` : ''}`,
     `-- Generated: ${new Date().toISOString()}`,
     `-- Confidence: ${(result.summary.average_confidence * 100).toFixed(1)}%`,
     `-- Complexity: ${complexity.label.toUpperCase()} (${complexity.reasons.join('; ')})`,
@@ -68,10 +69,11 @@ export function generateFlywaySQL(result: ReconciliationResult): string {
   const timeStr = timestamp.toTimeString().split(' ')[0].replace(/:/g, '')
   const version = `V${dateStr}.${timeStr}`
 
+  const columnCount = result.summary.columns_matched || 0
   const lines: string[] = [
     `-- ${version} | SchemaSync Migration`,
     `-- Generated: ${new Date().toISOString()}`,
-    `-- Tables: ${result.summary.tables_matched}, Columns: ${result.summary.columns_matched}`,
+    `-- Tables: ${result.summary.tables_matched}${columnCount > 0 ? `, Columns: ${columnCount}` : ''}`,
     '',
   ]
 
@@ -134,7 +136,7 @@ export function generateLiquibaseXML(result: ReconciliationResult): string {
     // Add columns
     tm.unmatched_columns_b?.forEach((col) => {
       const colType = col.data_type?.base_type || 'TEXT'
-      lines.push(`    <addColumn tableName="${tm.table_b.name}"><column name="${col.name}" type="${colType}"/></addColumn>`)
+      lines.push(`    <addColumn tableName="${tm.table_b.name}"><column name="${col.name}" type="${colType}" /></addColumn>`)
     })
 
     lines.push(`  </changeSet>`)
