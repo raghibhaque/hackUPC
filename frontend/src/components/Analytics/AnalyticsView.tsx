@@ -242,53 +242,177 @@ function KPI({
   accent: 'indigo' | 'violet' | 'emerald' | 'amber' | 'slate'
 }) {
   const colors = {
-    indigo: 'border-indigo-500/20 bg-indigo-500/[0.06] text-indigo-300',
-    violet: 'border-violet-500/20 bg-violet-500/[0.06] text-violet-300',
-    emerald: 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-300',
-    amber: 'border-amber-500/20 bg-amber-500/[0.06] text-amber-300',
-    slate: 'border-white/[0.06] bg-white/[0.03] text-white/30',
+    indigo: {
+      border: 'border-indigo-500/30',
+      bg: 'bg-gradient-to-br from-indigo-500/12 to-indigo-600/4',
+      text: 'text-indigo-300',
+      icon: 'text-indigo-400/70',
+      glow: 'shadow-[0_8px_24px_rgba(99,102,241,0.15)]',
+    },
+    violet: {
+      border: 'border-violet-500/30',
+      bg: 'bg-gradient-to-br from-violet-500/12 to-violet-600/4',
+      text: 'text-violet-300',
+      icon: 'text-violet-400/70',
+      glow: 'shadow-[0_8px_24px_rgba(139,92,246,0.15)]',
+    },
+    emerald: {
+      border: 'border-emerald-500/30',
+      bg: 'bg-gradient-to-br from-emerald-500/12 to-emerald-600/4',
+      text: 'text-emerald-300',
+      icon: 'text-emerald-400/70',
+      glow: 'shadow-[0_8px_24px_rgba(16,185,129,0.15)]',
+    },
+    amber: {
+      border: 'border-amber-500/30',
+      bg: 'bg-gradient-to-br from-amber-500/12 to-amber-600/4',
+      text: 'text-amber-300',
+      icon: 'text-amber-400/70',
+      glow: 'shadow-[0_8px_24px_rgba(217,119,6,0.15)]',
+    },
+    slate: {
+      border: 'border-white/[0.08]',
+      bg: 'bg-gradient-to-br from-white/[0.04] to-white/[0.01]',
+      text: 'text-white/40',
+      icon: 'text-white/25',
+      glow: 'shadow-[0_8px_24px_rgba(255,255,255,0.05)]',
+    },
   }
+
+  const c = colors[accent]
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn('rounded-xl border p-4', colors[accent])}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        'relative overflow-hidden rounded-xl border p-4 backdrop-blur-sm transition-all',
+        c.border,
+        c.bg,
+        c.glow
+      )}
     >
-      {icon && <div className="mb-2 text-white/40">{icon}</div>}
-      <p className="text-[11px] font-medium uppercase tracking-wider opacity-70">{label}</p>
-      <p className="mt-1.5 text-2xl font-bold tabular-nums">{value}</p>
+      {/* Animated corner accent */}
+      <div className="absolute top-0 right-0 -mr-12 -mt-12 h-24 w-24 rounded-full opacity-20 blur-2xl" style={{
+        background: accent === 'indigo' ? 'radial-gradient(circle, #6366f1, transparent)' :
+                   accent === 'violet' ? 'radial-gradient(circle, #8b5cf6, transparent)' :
+                   accent === 'emerald' ? 'radial-gradient(circle, #10b981, transparent)' :
+                   accent === 'amber' ? 'radial-gradient(circle, #d97706, transparent)' :
+                   'radial-gradient(circle, rgba(255,255,255,0.1), transparent)',
+      }} />
+
+      <div className="relative z-10">
+        {icon && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+            className={cn('mb-3', c.icon)}
+          >
+            {icon}
+          </motion.div>
+        )}
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{label}</p>
+        <motion.p
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.15, duration: 0.3 }}
+          className={cn('mt-2 text-2xl font-bold tabular-nums', c.text)}
+        >
+          {value}
+        </motion.p>
+      </div>
     </motion.div>
   )
 }
 
 function ProgressBar({ pct, color }: { pct: number; color: string }) {
-  const bgColor =
-    color === 'emerald' ? 'bg-emerald-400/40' :
-    color === 'cyan' ? 'bg-cyan-400/40' :
-    color === 'amber' ? 'bg-amber-400/40' : 'bg-rose-400/40'
+  const getStyles = () => {
+    switch (color) {
+      case 'emerald':
+        return {
+          gradient: 'bg-gradient-to-r from-emerald-500 to-emerald-400',
+          glow: 'shadow-[0_0_12px_rgba(16,185,129,0.4)]',
+        }
+      case 'cyan':
+        return {
+          gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
+          glow: 'shadow-[0_0_12px_rgba(34,211,238,0.4)]',
+        }
+      case 'amber':
+        return {
+          gradient: 'bg-gradient-to-r from-amber-500 to-amber-400',
+          glow: 'shadow-[0_0_12px_rgba(217,119,6,0.4)]',
+        }
+      case 'rose':
+        return {
+          gradient: 'bg-gradient-to-r from-rose-500 to-rose-400',
+          glow: 'shadow-[0_0_12px_rgba(244,63,94,0.4)]',
+        }
+      default:
+        return {
+          gradient: 'bg-gradient-to-r from-blue-500 to-blue-400',
+          glow: 'shadow-[0_0_12px_rgba(59,130,246,0.4)]',
+        }
+    }
+  }
+
+  const styles = getStyles()
 
   return (
-    <div className={cn('h-1.5 overflow-hidden rounded-full bg-white/[0.06]')}>
+    <div className="overflow-hidden rounded-full bg-gradient-to-r from-white/[0.08] to-white/[0.04] p-0.5">
       <motion.div
-        className={bgColor}
-        initial={{ width: 0 }}
-        animate={{ width: `${pct}%` }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className={cn('h-1 rounded-full', styles.gradient, styles.glow)}
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: `${pct}%`, opacity: 1 }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
       />
     </div>
   )
 }
 
 function ScoreBox({ label, value, help, color }: { label: string; value: string; help: string; color: 'indigo' | 'violet' }) {
-  const colorClass = color === 'indigo'
-    ? 'border-indigo-500/20 bg-indigo-500/[0.06] text-indigo-300'
-    : 'border-violet-500/20 bg-violet-500/[0.06] text-violet-300'
+  const getStyles = () => {
+    if (color === 'indigo') {
+      return {
+        border: 'border-indigo-500/30',
+        bg: 'bg-gradient-to-br from-indigo-500/12 to-indigo-600/4',
+        text: 'text-indigo-300',
+        icon: 'text-indigo-400/60',
+        glow: 'shadow-[0_8px_24px_rgba(99,102,241,0.12)]',
+      }
+    }
+    return {
+      border: 'border-violet-500/30',
+      bg: 'bg-gradient-to-br from-violet-500/12 to-violet-600/4',
+      text: 'text-violet-300',
+      icon: 'text-violet-400/60',
+      glow: 'shadow-[0_8px_24px_rgba(139,92,246,0.12)]',
+    }
+  }
+
+  const s = getStyles()
 
   return (
-    <div className={cn('rounded-lg border p-3 text-center', colorClass)} title={help}>
-      <p className="text-[10px] uppercase tracking-wider opacity-60">{label}</p>
-      <p className="mt-1.5 text-2xl font-bold tabular-nums">{value}</p>
-      <p className="mt-1 text-[10px] opacity-50">{help}</p>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -2 }}
+      className={cn('relative overflow-hidden rounded-lg border p-3.5 text-center backdrop-blur-sm transition-all', s.border, s.bg, s.glow)}
+      title={help}
+    >
+      <p className="text-[9px] font-bold uppercase tracking-widest opacity-70">{label}</p>
+      <motion.p
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className={cn('mt-2 text-2xl font-bold tabular-nums', s.text)}
+      >
+        {value}
+      </motion.p>
+      <p className="mt-1.5 text-[10px] font-medium opacity-60">{help}</p>
+    </motion.div>
   )
 }
