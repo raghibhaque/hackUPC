@@ -178,25 +178,39 @@ export default function UploadPanel({ onResult }: Props) {
             />
           </div>
 
-          <button
+          <motion.button
+            whileHover={canReconcile ? { scale: 1.02, y: -1 } : {}}
+            whileTap={canReconcile ? { scale: 0.98 } : {}}
             onClick={handleReconcile}
             disabled={!canReconcile}
             className={cn(
-              'w-full rounded-xl border px-5 py-3 text-sm font-medium transition-all',
+              'relative w-full overflow-hidden rounded-xl border px-5 py-3.5 text-sm font-semibold transition-all',
               canReconcile
-                ? 'border-white/[0.12] bg-white/[0.06] text-white hover:border-white/20 hover:bg-white/[0.1] active:scale-[0.99]'
+                ? 'border-white/[0.15] bg-gradient-to-r from-white/[0.08] to-white/[0.04] text-white shadow-[0_8px_32px_rgba(255,255,255,0.1)] hover:border-white/[0.25] hover:shadow-[0_12px_48px_rgba(255,255,255,0.15)]'
                 : 'cursor-not-allowed border-white/[0.04] bg-white/[0.02] text-white/20'
             )}
           >
             {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
+              <motion.span
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="flex items-center justify-center gap-2"
+              >
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Reconciling…
-              </span>
+              </motion.span>
             ) : (
-              'Reconcile schemas'
+              <span className="relative flex items-center justify-center gap-2">
+                <span>Reconcile schemas</span>
+                <motion.span
+                  initial={{ x: 0 }}
+                  whileHover={canReconcile ? { x: 4 } : {}}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </motion.span>
+              </span>
             )}
-          </button>
+          </motion.button>
         </motion.div>
       </div>
 

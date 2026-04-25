@@ -313,35 +313,47 @@ function Row({
   ).join(', ')
 
   return (
-    <div className={cn(!isLast && 'border-b border-white/[0.05]', reviewed && 'bg-green-900/10')}>
+    <div className={cn(
+      !isLast && 'border-b border-white/[0.05]',
+      reviewed && 'bg-gradient-to-r from-green-900/[0.15] to-transparent'
+    )}>
       <motion.button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.03]"
+        whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
+        className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-all"
         initial={false}
       >
-        <input
+        <motion.input
           type="checkbox"
           checked={reviewed}
           onClick={(e) => e.stopPropagation()}
           onChange={() => onToggleReviewed?.()}
-          className="mr-2 h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500"
+          className="mr-2 h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500 transition-all"
           title="Mark as reviewed"
+          whileHover={{ scale: 1.1 }}
         />
 
-        <input
+        <motion.input
           type="checkbox"
           checked={isBulkSelected}
           onClick={(e) => e.stopPropagation()}
           onChange={onBulkToggle}
-          className="h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500"
+          className="h-4 w-4 rounded border border-white/15 bg-white/5 accent-indigo-500 transition-all"
           title="Select for bulk actions"
+          whileHover={{ scale: 1.1 }}
         />
 
-        <span className="w-5 shrink-0 text-xs text-white/20">{index + 1}</span>
+        <span className="w-5 shrink-0 text-xs font-semibold text-white/30">{index + 1}</span>
 
         {reviewed && (
-          <span className="ml-1 text-xs text-green-400">Reviewed</span>
+          <motion.span
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="ml-1 text-xs font-semibold text-green-400"
+          >
+            ✓ Reviewed
+          </motion.span>
         )}
 
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -352,7 +364,12 @@ function Row({
             highlight={searchTerm}
           />
 
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-white/20" />
+          <motion.div
+            className="h-3.5 w-3.5 shrink-0 text-white/20"
+            whileHover={{ x: 2 }}
+          >
+            <ArrowRight className="h-3.5 w-3.5" />
+          </motion.div>
 
           <TableName
             name={mapping.table_b.name}
@@ -362,8 +379,11 @@ function Row({
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2.5">
-          <div className="group relative">
+        <div className="flex shrink-0 items-center gap-3">
+          <motion.div
+            className="group relative"
+            whileHover={{ scale: 1.08 }}
+          >
             <ConfidenceBadge value={mapping.confidence} />
 
             <div className="pointer-events-none absolute -right-2 -top-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
@@ -374,35 +394,37 @@ function Row({
                 matchReason={mapping.column_mappings?.[0]?.mapping_type}
               />
             </div>
-          </div>
+          </motion.div>
 
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 text-white/25 transition-transform',
-              isExpanded && 'rotate-180'
-            )}
-          />
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            className="h-4 w-4 text-white/25 transition-transform"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </motion.div>
         </div>
 
-        <span
+        <motion.button
+          whileHover={{ scale: 1.15, x: 2 }}
+          whileTap={{ scale: 0.9 }}
           onClick={(e) => {
             e.stopPropagation()
             onViewDetails()
           }}
-          className="ml-2 cursor-pointer p-1 text-white/30 transition-colors hover:text-white/60"
+          className="ml-1 p-1 text-white/40 opacity-0 transition-all group-hover:opacity-100"
           title="View column details"
         >
           <ChevronDown className="h-4 w-4 -rotate-90" />
-        </span>
+        </motion.button>
 
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.15, x: 2 }}
+          whileTap={{ scale: 0.9 }}
           onClick={(e) => {
             e.stopPropagation()
             onViewDiff()
           }}
-          className="ml-1 p-1 text-white/30 hover:text-white/60 transition-colors"
+          className="ml-1 p-1 text-white/40 opacity-0 transition-all group-hover:opacity-100"
           title="Compare source vs target"
         >
           <ArrowRight className="h-4 w-4" />
@@ -418,69 +440,88 @@ function Row({
             transition={{ duration: 0.22, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-white/[0.05] bg-white/[0.015] px-5 pb-4 pt-3">
-              <div className="mb-2 flex flex-wrap gap-4">
+            <div className="border-t border-white/[0.05] bg-gradient-to-b from-white/[0.03] to-white/[0.01] px-5 pb-4 pt-3">
+              <div className="mb-4 grid grid-cols-2 gap-4 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3">
                 <div>
-                  <span className="text-xs text-white/30">Source columns:</span>
-                  <span className="ml-1 font-mono text-xs text-white/60">
-                    {mapping.table_a.columns.length}
-                  </span>
+                  <p className="text-xs font-semibold text-white/40 mb-1">Source Stats</p>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-white/30">Columns:</span>
+                      <span className="font-mono text-xs text-white/70 font-semibold">
+                        {mapping.table_a.columns.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-white/30">Types:</span>
+                      <span className="font-mono text-xs text-white/60 truncate text-right">
+                        {sourceTypes || 'unknown'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
-                  <span className="text-xs text-white/30">Target columns:</span>
-                  <span className="ml-1 font-mono text-xs text-white/60">
-                    {mapping.table_b.columns.length}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-xs text-white/30">Source types:</span>
-                  <span className="ml-1 font-mono text-xs text-white/60">
-                    {sourceTypes || 'unknown'}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-xs text-white/30">Target types:</span>
-                  <span className="ml-1 font-mono text-xs text-white/60">
-                    {targetTypes || 'unknown'}
-                  </span>
+                  <p className="text-xs font-semibold text-white/40 mb-1">Target Stats</p>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-white/30">Columns:</span>
+                      <span className="font-mono text-xs text-white/70 font-semibold">
+                        {mapping.table_b.columns.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-white/30">Types:</span>
+                      <span className="font-mono text-xs text-white/60 truncate text-right">
+                        {targetTypes || 'unknown'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/25">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/25">
                 Column mappings · {(mapping.column_mappings ?? []).length}
               </p>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {(mapping.column_mappings ?? []).map((col, ci) => (
-                  <div
+                  <motion.div
                     key={ci}
-                    className="flex items-center gap-3 rounded-lg border border-white/[0.05] bg-white/[0.025] px-3 py-2 text-xs"
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: ci * 0.05 }}
+                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                    className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-gradient-to-r from-white/[0.02] to-transparent px-3 py-2.5 text-xs transition-all"
                   >
-                    <code className="text-indigo-300/80">{col.col_a.name}</code>
-                    <span className="text-white/[0.15]">·</span>
-                    <code className="text-white/30">
+                    <code className="font-semibold text-indigo-300/90">{col.col_a.name}</code>
+                    <span className="text-white/[0.2]">·</span>
+                    <code className="font-mono text-white/40 text-[11px]">
                       {col.col_a.data_type?.base_type ?? 'unknown'}
                     </code>
 
-                    <ArrowRight className="h-3 w-3 shrink-0 text-white/15" />
+                    <motion.div className="h-3 w-3 shrink-0 text-white/15" whileHover={{ x: 2 }}>
+                      <ArrowRight className="h-3 w-3" />
+                    </motion.div>
 
-                    <code className="text-violet-300/80">{col.col_b.name}</code>
-                    <span className="text-white/[0.15]">·</span>
-                    <code className="text-white/30">
+                    <code className="font-semibold text-violet-300/90">{col.col_b.name}</code>
+                    <span className="text-white/[0.2]">·</span>
+                    <code className="font-mono text-white/40 text-[11px]">
                       {col.col_b.data_type?.base_type ?? 'unknown'}
                     </code>
 
-                    <span className="ml-auto text-white/25">
+                    <span className="ml-auto text-white/40 font-semibold">
                       {(col.confidence * 100).toFixed(0)}%
                     </span>
 
                     {(col.conflicts?.length ?? 0) > 0 && (
-                      <AlertTriangle className="h-3 w-3 text-amber-400/60" />
+                      <motion.div
+                        whileHover={{ scale: 1.2 }}
+                        title={`${col.conflicts.length} conflict(s)`}
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-400/70" />
+                      </motion.div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -546,19 +587,35 @@ function Stat({
   accent?: boolean
   warn?: boolean
 }) {
+  const baseClass = accent
+    ? 'border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-indigo-600/5'
+    : warn
+      ? 'border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-amber-600/5'
+      : 'border-white/[0.08] bg-gradient-to-br from-white/[0.06] to-white/[0.02]'
+
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
-      <p className="text-xs text-white/35">{label}</p>
+    <motion.div
+      whileHover={{ y: -2 }}
+      className={cn(
+        'rounded-xl border px-4 py-3.5 transition-all',
+        baseClass
+      )}
+    >
+      <p className="text-xs font-medium text-white/40 uppercase tracking-wide">{label}</p>
 
       <p
         className={cn(
-          'mt-1 text-xl font-bold tabular-nums',
-          warn ? 'text-amber-300' : accent ? 'text-indigo-300' : 'text-white/80'
+          'mt-2 text-2xl font-bold tabular-nums',
+          warn
+            ? 'text-amber-300'
+            : accent
+              ? 'text-indigo-300'
+              : 'text-white/90'
         )}
       >
         {value}
       </p>
-    </div>
+    </motion.div>
   )
 }
 
