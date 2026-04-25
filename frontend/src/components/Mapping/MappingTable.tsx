@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, AlertTriangle, Search, X } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import type { ReconciliationResult, TableMapping } from '../../types'
 import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -24,6 +25,7 @@ export default function MappingTable({ result }: Props) {
   const [minConfidence, setMinConfidence] = useState(0)
   const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Generate a unique session key for this reconciliation result
   const sessionKey = useMemo(() => {
@@ -134,6 +136,15 @@ export default function MappingTable({ result }: Props) {
     a.click()
   }
 
+  // Use virtualizer only if list is large (>50 items)
+  const shouldVirtualize = filtered.length > 50
+  const virtualizer = useVirtualizer({
+    count: shouldVirtualize ? filtered.length : 0,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 64,
+    overscan: 5,
+  })
+
   return (
     <div className="space-y-6">
       <BulkActionBar
@@ -236,28 +247,75 @@ export default function MappingTable({ result }: Props) {
         <Empty message={search ? 'No tables match your search' : 'No table mappings found'} />
       ) : (
         <div className="overflow-hidden rounded-xl border border-white/[0.07]">
-          {filtered.map((m, i) => (
-            <Row
-              key={`${m.table_a.name}-${m.table_b.name}-${i}`}
-              mapping={m}
-              index={i}
-              isExpanded={expanded.has(i)}
-              onToggle={() => toggle(i)}
-              isLast={i === filtered.length - 1}
-              onViewDetails={() => setSelectedMapping(m)}
-              onViewDiff={() => setDiffMapping(m)}
-              reviewed={reviewed.has(i)}
-              onToggleReviewed={() => toggleReviewed(i)}
-              searchTerm={search}
-              isBulkSelected={selectedForBulk.has(i)}
-              onBulkToggle={() => {
-                const newSet = new Set(selectedForBulk)
-                if (newSet.has(i)) newSet.delete(i)
-                else newSet.add(i)
-                setSelectedForBulk(newSet)
-              }}
-            />
-          ))}
+          {shouldVirtualize ? (
+            <div
+              ref={containerRef}
+              className="h-[600px] overflow-y-auto"
+            >
+              <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+                {virtualizer.getVirtualItems().map((virtualItem) => {
+                  const m = filtered[virtualItem.index]
+                  const i = virtualItem.index
+                  return (
+                    <div
+                      key={`${m.table_a.name}-${m.table_b.name}-${i}`}
+                      data-index={virtualItem.index}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
+                    >
+                      <Row
+                        mapping={m}
+                        index={i}
+                        isExpanded={expanded.has(i)}
+                        onToggle={() => toggle(i)}
+                        isLast={i === filtered.length - 1}
+                        onViewDetails={() => setSelectedMapping(m)}
+                        onViewDiff={() => setDiffMapping(m)}
+                        reviewed={reviewed.has(i)}
+                        onToggleReviewed={() => toggleReviewed(i)}
+                        searchTerm={search}
+                        isBulkSelected={selectedForBulk.has(i)}
+                        onBulkToggle={() => {
+                          const newSet = new Set(selectedForBulk)
+                          if (newSet.has(i)) newSet.delete(i)
+                          else newSet.add(i)
+                          setSelectedForBulk(newSet)
+                        }}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            filtered.map((m, i) => (
+              <Row
+                key={`${m.table_a.name}-${m.table_b.name}-${i}`}
+                mapping={m}
+                index={i}
+                isExpanded={expanded.has(i)}
+                onToggle={() => toggle(i)}
+                isLast={i === filtered.length - 1}
+                onViewDetails={() => setSelectedMapping(m)}
+                onViewDiff={() => setDiffMapping(m)}
+                reviewed={reviewed.has(i)}
+                onToggleReviewed={() => toggleReviewed(i)}
+                searchTerm={search}
+                isBulkSelected={selectedForBulk.has(i)}
+                onBulkToggle={() => {
+                  const newSet = new Set(selectedForBulk)
+                  if (newSet.has(i)) newSet.delete(i)
+                  else newSet.add(i)
+                  setSelectedForBulk(newSet)
+                }}
+              />
+            ))
+          )}
         </div>
       )}
 

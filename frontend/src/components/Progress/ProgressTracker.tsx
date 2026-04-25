@@ -224,7 +224,7 @@ export default function ProgressTracker({
                     />
                   </motion.div>
                 )}
-              </div>
+              </motion.div>
             )
           })}
         </div>
