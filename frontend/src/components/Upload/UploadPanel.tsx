@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { Variants } from 'framer-motion'
-import { FileText, ArrowRight, Loader2, Database } from 'lucide-react'
+import { FileText, ArrowRight, Loader2, Database, Upload } from 'lucide-react'
 import type { ReconciliationResult } from '../../types'
 import { apiClient } from '../../lib/api'
 import { showToast } from '../../lib/toast'
@@ -121,7 +121,9 @@ export default function UploadPanel({ onResult }: Props) {
         </motion.p>
 
         {/* Error */}
-        <AnimateError error={error} onDismiss={() => setError(null)} />
+        <AnimatePresence>
+          {error && <AnimateError error={error} onDismiss={() => setError(null)} />}
+        </AnimatePresence>
 
         {/* Demo CTA */}
         <motion.div variants={fadeUp(3)} initial="hidden" animate="visible" className="mb-8">
@@ -213,26 +215,76 @@ function FilePicker({
   disabled: boolean
   onClick: () => void
 }) {
+  const [isDragging, setIsDragging] = useState(false)
+
   const colors = {
     indigo: { active: 'border-indigo-500/40 bg-indigo-500/[0.07] text-indigo-300', icon: 'text-indigo-400' },
     violet: { active: 'border-violet-500/40 bg-violet-500/[0.07] text-violet-300', icon: 'text-violet-400' },
   }
   const c = colors[accent]
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0]
+      if (file.name.endsWith('.sql')) {
+        onClick()
+        // Trigger file input with dropped file
+        const input = (e.currentTarget as any).querySelector('input[type="file"]')
+        if (input) {
+          const dt = new DataTransfer()
+          dt.items.add(file)
+          input.files = dt.files
+          const event = new Event('change', { bubbles: true })
+          input.dispatchEvent(event)
+        }
+      } else {
+        showToast('Please drop a .sql file', 'error')
+      }
+    }
+  }
+
   return (
     <button
       type="button"
       onClick={onClick}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       disabled={disabled}
       className={cn(
         'flex flex-col items-center gap-2 rounded-xl border px-3 py-4 text-center transition-all',
-        file ? c.active : 'border-white/[0.07] bg-white/[0.03] text-white/30 hover:border-white/[0.12] hover:bg-white/[0.05]',
+        isDragging
+          ? 'border-white/[0.3] bg-white/[0.08] ring-2 ring-white/[0.1]'
+          : file ? c.active : 'border-white/[0.07] bg-white/[0.03] text-white/30 hover:border-white/[0.12] hover:bg-white/[0.05]',
         disabled && 'cursor-not-allowed opacity-50'
       )}
     >
-      <FileText className={cn('h-5 w-5', file ? c.icon : 'text-white/20')} />
+      <motion.div
+        animate={{ scale: isDragging ? 1.1 : 1 }}
+        transition={{ duration: 0.2 }}
+      >
+        {isDragging ? (
+          <Upload className="h-5 w-5 text-white/40" />
+        ) : (
+          <FileText className={cn('h-5 w-5', file ? c.icon : 'text-white/20')} />
+        )}
+      </motion.div>
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-wider opacity-60">{label}</p>
+        <p className="text-[11px] font-medium uppercase tracking-wider opacity-60">
+          {isDragging ? 'Drop file here' : label}
+        </p>
         <p className="mt-0.5 max-w-full truncate text-xs font-medium">
           {file ? file.name : '.sql file'}
         </p>
