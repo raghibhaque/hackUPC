@@ -8,7 +8,9 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useTheme } from '../../hooks/useTheme'
 import { useTemplates } from '../../hooks/useTemplates'
 import { useHistory } from '../../hooks/useHistory'
+import { useFilterPresets } from '../../hooks/useFilterPresets'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
+import FilterPresetsUI from './FilterPresetsUI'
 import { ConfidenceTooltip } from '../shared/ConfidenceTooltip'
 import ColumnDetailsDrawer from './ColumnDetailsDrawer'
 import ConfidenceFilterSlider from './ConfidenceFilterSlider'
@@ -33,6 +35,7 @@ export default function MappingTable({ result }: Props) {
   const [selectedForBulk, setSelectedForBulk] = useState<Set<number>>(new Set())
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [activePresetId, setActivePresetId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rowsRef = useRef<Map<number, HTMLDivElement>>(new Map())
@@ -45,6 +48,7 @@ export default function MappingTable({ result }: Props) {
 
   const { templates, saveTemplate: saveTemplateToStorage, deleteTemplate: deleteTemplateFromStorage } = useTemplates(schemaHash)
   const { history, addEntry: addHistoryEntry, clearHistory } = useHistory(schemaHash)
+  const { allPresets, savePreset: savePresetToStorage, deletePreset: deletePresetFromStorage } = useFilterPresets()
 
   const handleSaveTemplate = (name: string) => {
     const reviewedIndices = Array.from(reviewed)
@@ -81,6 +85,24 @@ export default function MappingTable({ result }: Props) {
       tableName: `${selectedMapping.table_a.name} → ${selectedMapping.table_b.name}`,
       description: `Accepted suggestion to map "${sourceCol}" to "${targetCol}"`,
     })
+  }
+
+  const handleApplyPreset = (preset: { minConfidence: number; search: string }) => {
+    setSearch(preset.search)
+    setMinConfidence(preset.minConfidence)
+    setActivePresetId(allPresets.find(p => p.minConfidence === preset.minConfidence && p.search === preset.search)?.id ?? null)
+  }
+
+  const handleSaveFilterPreset = (name: string) => {
+    savePresetToStorage(name, search, minConfidence)
+    setActivePresetId(`custom-${Date.now()}`)
+  }
+
+  const handleDeleteFilterPreset = (id: string) => {
+    deletePresetFromStorage(id)
+    if (activePresetId === id) {
+      setActivePresetId(null)
+    }
   }
 
   // Generate a unique session key for this reconciliation result
@@ -355,6 +377,24 @@ export default function MappingTable({ result }: Props) {
         filteredCount={filtered.length}
         isDark={isDark}
       />
+
+      <div className={`rounded-xl border p-4 ${
+        isDark
+          ? 'border-white/[0.07] bg-white/[0.03]'
+          : 'border-slate-300 bg-slate-100'
+      }`}>
+        <h3 className={`mb-3 text-xs font-semibold ${isDark ? 'text-white/40' : 'text-slate-600'}`}>
+          Filter Presets
+        </h3>
+        <FilterPresetsUI
+          presets={allPresets}
+          activePresetId={activePresetId}
+          onApplyPreset={handleApplyPreset}
+          onSavePreset={handleSaveFilterPreset}
+          onDeletePreset={handleDeleteFilterPreset}
+          isDark={isDark}
+        />
+      </div>
 
       <AnimatePresence>
         {showHistory && (
