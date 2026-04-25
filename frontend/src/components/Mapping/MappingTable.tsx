@@ -102,7 +102,7 @@ export default function MappingTable({ result }: Props) {
     return `conflicts:${tables_in_a}_${tables_in_b}_${tables_matched}`
   }, [result.summary])
 
-  const { getStats: getConflictStats } = useConflictResolutions(conflictSessionKey)
+  const { markResolved, getStats: getConflictStats } = useConflictResolutions(conflictSessionKey)
   const conflictStats = getConflictStats()
 
   const metrics = useProgressMetrics(result, reviewed, conflictStats.resolved)
@@ -576,6 +576,7 @@ export default function MappingTable({ result }: Props) {
             <BatchConflictResolutionPanel
               patterns={conflictPatterns}
               onApplyResolution={(patternId, resolution) => {
+                markResolved(patternId, `Applied suggested resolution: ${resolution}`)
                 addHistoryEntry({
                   actionType: 'suggestion_accepted',
                   mappingId: patternId,
@@ -584,6 +585,9 @@ export default function MappingTable({ result }: Props) {
                 })
               }}
               onApplyAll={(resolutions) => {
+                Object.entries(resolutions).forEach(([patternId, resolution]) => {
+                  markResolved(patternId, `Applied suggested resolution: ${resolution}`)
+                })
                 addHistoryEntry({
                   actionType: 'suggestion_accepted',
                   mappingId: 'batch-all',
