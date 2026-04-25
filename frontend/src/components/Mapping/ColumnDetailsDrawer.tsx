@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronRight, AlertTriangle } from 'lucide-react'
-import type { TableMapping } from '../../types'
+import { X, ChevronRight, AlertTriangle, Eye } from 'lucide-react'
+import { useState } from 'react'
+import type { TableMapping, ColumnMapping } from '../../types'
 import { cn } from '@/lib/utils'
 import { useTheme } from '../../hooks/useTheme'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import UnmatchedColumnsPanel from './UnmatchedColumnsPanel'
+import DataPreviewDrawer from './DataPreviewDrawer'
 
 interface Props {
   mapping: TableMapping | null
@@ -15,6 +17,7 @@ interface Props {
 export default function ColumnDetailsDrawer({ mapping, onClose, onSuggestionAccept }: Props) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+  const [previewMapping, setPreviewMapping] = useState<ColumnMapping | null>(null)
 
   if (!mapping) return null
 
@@ -142,14 +145,32 @@ export default function ColumnDetailsDrawer({ mapping, onClose, onSuggestionAcce
                       </div>
                     </div>
 
-                    {/* Confidence */}
+                    {/* Confidence and Preview */}
                     <div className={`flex items-center justify-between pt-3 border-t ${
                       isDark ? 'border-white/[0.05]' : 'border-slate-300'
                     }`}>
-                      <span className={`text-xs ${
-                        isDark ? 'text-white/40' : 'text-slate-600'
-                      }`}>Confidence</span>
-                      <ConfidenceBadge value={col.confidence} size="sm" showPercent={true} />
+                      <div>
+                        <span className={`text-xs ${
+                          isDark ? 'text-white/40' : 'text-slate-600'
+                        }`}>Confidence</span>
+                        <div className="mt-1">
+                          <ConfidenceBadge value={col.confidence} size="sm" showPercent={true} />
+                        </div>
+                      </div>
+                      <motion.button
+                        onClick={() => setPreviewMapping(col)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                          isDark
+                            ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30'
+                            : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
+                        }`}
+                        title="Preview sample data"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Preview
+                      </motion.button>
                     </div>
 
                     {/* Conflicts */}
@@ -207,6 +228,13 @@ export default function ColumnDetailsDrawer({ mapping, onClose, onSuggestionAcce
               />
             </div>
           </motion.div>
+
+          <DataPreviewDrawer
+            mapping={previewMapping}
+            sourceTableName={mapping.table_a.name}
+            targetTableName={mapping.table_b.name}
+            onClose={() => setPreviewMapping(null)}
+          />
         </>
       )}
     </AnimatePresence>

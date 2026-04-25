@@ -36,6 +36,8 @@ export interface ColumnMapping {
   confidence: number;
   mapping_type: string;
   conflicts: unknown[];
+  sample_values_a?: string[];
+  sample_values_b?: string[];
 }
 
 // Table mapping in reconciliation
