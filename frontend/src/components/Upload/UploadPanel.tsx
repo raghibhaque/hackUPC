@@ -73,7 +73,7 @@ export default function UploadPanel({ onResult }: Props) {
     })
   }
 
-  const canReconcile = sourceFile && targetFile && !isLoading
+  const canReconcile = sourceFile && targetFile && activeDemo === null
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#06060e] flex flex-col items-center justify-center">
