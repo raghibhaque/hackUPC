@@ -137,23 +137,77 @@ export default function UploadPanel({ onResult }: Props) {
           {error && <AnimateError error={error} onDismiss={() => setError(null)} />}
         </AnimatePresence>
 
-        {/* Demo CTA */}
-        <motion.div variants={fadeUp(3)} initial="hidden" animate="visible" className="mb-8">
+        {/* Demo scenarios */}
+        <motion.div variants={fadeUp(3)} initial="hidden" animate="visible" className="mb-8 space-y-2.5">
+          <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-widest text-white/25">
+            Try a demo scenario
+          </p>
+
+          {/* Ghost → WordPress */}
           <button
             onClick={handleDemo}
             disabled={isLoading}
             className="group relative w-full overflow-hidden rounded-xl border border-indigo-500/30 bg-indigo-600/10 px-5 py-3.5 text-sm font-medium text-indigo-300 backdrop-blur-sm transition-all hover:border-indigo-400/50 hover:bg-indigo-600/20 hover:text-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? (
+            {activeDemo === 'ghost' ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Running reconciliation…
               </span>
             ) : (
+              <span className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Ghost CMS → WordPress
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="text-[10px] font-normal text-indigo-400/60">4 tables · CMS platform migration</span>
+              </span>
+            )}
+          </button>
+
+          {/* Salesforce → HubSpot */}
+          <button
+            onClick={handleCRMDemo}
+            disabled={isLoading}
+            className="group relative w-full overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-600/10 px-5 py-3.5 text-sm font-medium text-emerald-300 backdrop-blur-sm transition-all hover:border-emerald-400/50 hover:bg-emerald-600/20 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {activeDemo === 'crm' ? (
               <span className="flex items-center justify-center gap-2">
-                <Database className="h-4 w-4" />
-                Run demo — Ghost vs WordPress
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Running reconciliation…
+              </span>
+            ) : (
+              <span className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Salesforce → HubSpot CRM
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="text-[10px] font-normal text-emerald-400/60">8 tables · Legacy CRM modernisation</span>
+              </span>
+            )}
+          </button>
+
+          {/* Legacy E-Commerce → Modern */}
+          <button
+            onClick={handleMessyDemo}
+            disabled={isLoading}
+            className="group relative w-full overflow-hidden rounded-xl border border-amber-500/30 bg-amber-600/10 px-5 py-3.5 text-sm font-medium text-amber-300 backdrop-blur-sm transition-all hover:border-amber-400/50 hover:bg-amber-600/20 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {activeDemo === 'messy' ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Running reconciliation…
+              </span>
+            ) : (
+              <span className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Legacy Shop → Modern E-Commerce
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="text-[10px] font-normal text-amber-400/60">8 tables · Messy schema normalisation</span>
               </span>
             )}
           </button>
