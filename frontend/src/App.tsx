@@ -11,6 +11,7 @@ import MigrationScaffold from './components/CodeGen/MigrationScaffold'
 import AnalyticsView from './components/Analytics/AnalyticsView'
 import ToastContainer from './components/shared/ToastContainer'
 import ShortcutsModal from './components/shared/ShortcutsModal'
+import Logo from './components/shared/Logo'
 
 type Tab = 'mappings' | 'analytics' | 'graph' | 'conflicts' | 'migration'
 
@@ -69,10 +70,7 @@ export default function App() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex items-center gap-3"
                 >
-                  <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 shadow-[0_0_12px_3px_rgba(129,140,248,0.3)]" />
-                  <span className="text-sm font-bold tracking-wide text-white">
-                    SchemaSync
-                  </span>
+                  <Logo size="sm" />
                   <span className="text-white/20">·</span>
                   <span className="text-xs font-medium text-white/50">
                     {result.summary.tables_matched} / {result.summary.tables_in_a} tables mapped
