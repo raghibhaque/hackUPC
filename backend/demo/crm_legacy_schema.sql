@@ -132,3 +132,16 @@ CREATE TABLE SF_ACTV (
     KEY idx_what   (what_id),
     KEY idx_due    (due_dt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE SF_OPPTY_CNTCT (
+    oc_id       INT         NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    oppty_id    INT         NOT NULL,
+    cntct_id    INT         NOT NULL,
+    role        VARCHAR(80) DEFAULT NULL,
+    is_prim     TINYINT(1)  NOT NULL DEFAULT 0,
+    cre_dt      DATETIME    NOT NULL,
+    KEY idx_oppty  (oppty_id),
+    KEY idx_cntct  (cntct_id),
+    FOREIGN KEY (oppty_id) REFERENCES SF_OPPTY(oppty_id),
+    FOREIGN KEY (cntct_id) REFERENCES SF_CNTCT(cntct_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
