@@ -256,7 +256,7 @@ export default function UploadPanel({ onResult }: Props) {
                 : 'cursor-not-allowed border-white/[0.04] bg-white/[0.02] text-white/20'
             )}
           >
-            {isLoading ? (
+            {activeDemo === 'files' ? (
               <motion.span
                 animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
