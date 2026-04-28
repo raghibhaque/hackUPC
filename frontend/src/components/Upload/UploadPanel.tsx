@@ -22,16 +22,18 @@ const fadeUp = (i: number): Variants => ({
 })
 
 export default function UploadPanel({ onResult }: Props) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [activeDemo, setActiveDemo] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [targetFile, setTargetFile] = useState<File | null>(null)
 
+  const isLoading = activeDemo !== null
+
   const sourceRef = useRef<HTMLInputElement>(null)
   const targetRef = useRef<HTMLInputElement>(null)
 
-  const run = async (fn: () => Promise<ReconciliationResult>) => {
-    setIsLoading(true)
+  const run = async (demoKey: string, fn: () => Promise<ReconciliationResult>) => {
+    setActiveDemo(demoKey)
     setError(null)
     try {
       onResult(await fn())
@@ -40,13 +42,13 @@ export default function UploadPanel({ onResult }: Props) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
       setError(message)
       showToast(message, 'error')
-      setIsLoading(false)
+      setActiveDemo(null)
     }
   }
 
   const handleDemo = () => {
     showToast('Loading demo data...', 'info', 1500)
-    run(() => apiClient.runDemo())
+    run('ghost', () => apiClient.runDemo())
   }
 
   const handleReconcile = () => {
