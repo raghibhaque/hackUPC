@@ -1,7 +1,10 @@
 """Export route — download generated migration SQL."""
 
+import csv
+import io
+
 from fastapi import APIRouter, Query
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 
 from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDetail
 from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
@@ -218,3 +221,71 @@ async def export_demo_transform(format: str = _TRANSFORM_FORMAT_Q):
         media_type=media_type,
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+# ── CSV export of column mappings ─────────────────────────────────────────────
+
+_CSV_COLUMNS = [
+    "source_table", "source_column", "source_type",
+    "target_table", "target_column", "target_type",
+    "structural_score", "semantic_score", "combined_score",
+    "confidence_tier", "match_reason",
+]
+
+
+def _mappings_to_csv(result, source_name: str, target_name: str, filename: str) -> StreamingResponse:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=_CSV_COLUMNS, extrasaction="ignore")
+    writer.writeheader()
+    for tm in result.table_mappings:
+        for cm in tm.column_mappings:
+            writer.writerow({
+                "source_table": cm.source_table,
+                "source_column": cm.source_column,
+                "source_type": cm.source_col_type,
+                "target_table": cm.target_table,
+                "target_column": cm.target_column,
+                "target_type": cm.target_col_type,
+                "structural_score": round(cm.structural_score, 4),
+                "semantic_score": round(cm.semantic_score, 4),
+                "combined_score": round(cm.combined_score, 4),
+                "confidence_tier": cm.to_dict()["confidence_tier"],
+                "match_reason": cm.match_reason,
+            })
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/csv", responses=_ERR)
+async def export_mappings_csv(req: ReconcileRequest):
+    """Export all column mappings as a CSV file."""
+    if not parser.can_parse(req.source_sql):
+        api_error(400, ErrorCode.PARSE_ERROR, "Source SQL has no CREATE TABLE statements",
+                  detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement"))
+    if not parser.can_parse(req.target_sql):
+        api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements",
+                  detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement"))
+
+    source = parser.parse(req.source_sql, schema_name=req.source_name)
+    target = parser.parse(req.target_sql, schema_name=req.target_name)
+    result = engine.reconcile(source, target)
+    filename = f"mappings_{req.source_name}_to_{req.target_name}.csv"
+    return _mappings_to_csv(result, req.source_name, req.target_name, filename)
+
+
+@router.get("/demo/csv", responses=_ERR)
+async def export_demo_mappings_csv():
+    """Export Ghost → WordPress column mappings as CSV."""
+    ghost_path = DEMO_DIR / "ghost_schema.sql"
+    wp_path = DEMO_DIR / "wordpress_schema.sql"
+    if not ghost_path.exists() or not wp_path.exists():
+        api_error(500, ErrorCode.INTERNAL_ERROR, "Demo schema files not found")
+
+    source = parser.parse(ghost_path.read_text(), schema_name="ghost")
+    target = parser.parse(wp_path.read_text(), schema_name="wordpress")
+    result = engine.reconcile(source, target)
+    return _mappings_to_csv(result, "ghost", "wordpress", "mappings_ghost_to_wordpress.csv")
