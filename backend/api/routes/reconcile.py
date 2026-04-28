@@ -7,14 +7,14 @@ import re
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDetail, FormatErrorDetail
-from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
+from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest, CRMDemoRequest
 from backend.api.models.responses import ReconcileResponse, JobSubmitResponse, JobStatusResponse
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.parsers.prisma import PrismaParser
 from backend.core.parsers.json_schema import JSONSchemaParser
 from backend.core.parsers.base import BaseParser
 from backend.core.reconciliation.engine import ReconciliationEngine
-from backend.config import DEMO_DIR, UPLOAD_DIR
+from backend.config import DEMO_DIR, UPLOAD_DIR, CRM_LEGACY_SCHEMA, CRM_MODERN_SCHEMA
 from backend.services.pipeline import create_job, get_job, run_reconciliation_job, stream_reconciliation
 from backend.services.schema_cache import get_or_parse
 
