@@ -410,6 +410,45 @@ async def reconcile_crm(req: CRMDemoRequest = CRMDemoRequest()):
     return ReconcileResponse(status="complete", result=result.to_dict())
 
 
+@router.post("/crm/stats", responses=_ERR)
+async def reconcile_crm_stats(req: CRMDemoRequest = CRMDemoRequest()):
+    source, target = _crm_schemas(req)
+    result = engine.reconcile(source, target)
+
+    high   = [tm for tm in result.table_mappings if tm.combined_score >= 0.8]
+    medium = [tm for tm in result.table_mappings if 0.5 <= tm.combined_score < 0.8]
+    low    = [tm for tm in result.table_mappings if tm.combined_score < 0.5]
+
+    type_c     = [c for c in result.conflicts if c.conflict_type == "type_mismatch"]
+    nullable_c = [c for c in result.conflicts if c.conflict_type == "nullable_mismatch"]
+    length_c   = [c for c in result.conflicts if c.conflict_type == "length_mismatch"]
+
+    return {
+        "status": "complete",
+        "elapsed_seconds": result.elapsed_seconds,
+        "source": source.to_dict(),
+        "target": target.to_dict(),
+        "summary": result.summary,
+        "confidence_breakdown": {"high": len(high), "medium": len(medium), "low": len(low)},
+        "conflict_breakdown": {
+            "type_mismatch":     len(type_c),
+            "nullable_mismatch": len(nullable_c),
+            "length_mismatch":   len(length_c),
+            "other": len(result.conflicts) - len(type_c) - len(nullable_c) - len(length_c),
+        },
+        "source_stats": {
+            "tables": len(source.tables),
+            "total_columns": sum(len(t.columns) for t in source.tables),
+            "total_foreign_keys": sum(len(t.foreign_keys) for t in source.tables),
+        },
+        "target_stats": {
+            "tables": len(target.tables),
+            "total_columns": sum(len(t.columns) for t in target.tables),
+            "total_foreign_keys": sum(len(t.foreign_keys) for t in target.tables),
+        },
+    }
+
+
 @router.post("/stream/files", responses=_ERR)
 async def reconcile_stream_files(source_file: str, target_file: str):
     source_path = UPLOAD_DIR / source_file
