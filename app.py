@@ -16,6 +16,7 @@ import webbrowser
 import urllib.request
 
 import uvicorn
+from backend.main import app  # direct import so PyInstaller can resolve it when frozen
 
 HOST = "127.0.0.1"
 PORT = 8000
@@ -31,7 +32,6 @@ def _open_when_ready() -> None:
             return
         except Exception:
             time.sleep(0.15)
-    # Server never came up — open anyway and let the browser show the error
     webbrowser.open(URL)
 
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     print(f"Starting SchemaSync on {URL} ...")
     threading.Thread(target=_open_when_ready, daemon=True).start()
     uvicorn.run(
-        "backend.main:app",
+        app,
         host=HOST,
         port=PORT,
         log_level="warning",
