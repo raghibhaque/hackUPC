@@ -341,3 +341,28 @@ async def export_crm_csv(req: CRMDemoRequest = CRMDemoRequest()):
     result = engine.reconcile(source, target)
     return _mappings_to_csv(result, req.source_name, req.target_name,
                             f"mappings_{req.source_name}_to_{req.target_name}.csv")
+
+
+@router.get("/crm/transform", responses=_ERR)
+async def export_crm_transform(req: CRMDemoRequest = CRMDemoRequest(), format: str = _TRANSFORM_FORMAT_Q):
+    """Export Salesforce → HubSpot migration as Python (SQLAlchemy) or TypeScript."""
+    if not CRM_LEGACY_SCHEMA.exists() or not CRM_MODERN_SCHEMA.exists():
+        api_error(500, ErrorCode.INTERNAL_ERROR, "CRM demo schema files not found")
+    source = parser.parse(CRM_LEGACY_SCHEMA.read_text(), schema_name=req.source_name)
+    target = parser.parse(CRM_MODERN_SCHEMA.read_text(), schema_name=req.target_name)
+    result = engine.reconcile(source, target)
+
+    if format == "typescript":
+        code = generate_typescript(result, source, target)
+        media_type = "text/typescript"
+        filename = f"migration_{req.source_name}_to_{req.target_name}.ts"
+    else:
+        code = generate_sqlalchemy(result, source, target)
+        media_type = "text/x-python"
+        filename = f"migration_{req.source_name}_to_{req.target_name}.py"
+
+    return PlainTextResponse(
+        content=code,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
