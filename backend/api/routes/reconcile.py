@@ -16,6 +16,7 @@ from backend.core.parsers.base import BaseParser
 from backend.core.reconciliation.engine import ReconciliationEngine
 from backend.config import DEMO_DIR, UPLOAD_DIR
 from backend.services.pipeline import create_job, get_job, run_reconciliation_job, stream_reconciliation
+from backend.services.schema_cache import get_or_parse
 
 router = APIRouter(prefix="/reconcile", tags=["reconcile"])
 
@@ -94,8 +95,8 @@ async def reconcile_raw(req: ReconcileRequest):
     if not parser.can_parse(req.target_sql):
         api_error(400, ErrorCode.PARSE_ERROR, "Target SQL has no CREATE TABLE statements", detail=ParseErrorDetail(hint="Add at least one CREATE TABLE statement to the target schema"))
 
-    source_schema = parser.parse(req.source_sql, schema_name=req.source_name)
-    target_schema = parser.parse(req.target_sql, schema_name=req.target_name)
+    source_schema = get_or_parse(req.source_sql, "sql_ddl", lambda t: parser.parse(t, schema_name=req.source_name))
+    target_schema = get_or_parse(req.target_sql, "sql_ddl", lambda t: parser.parse(t, schema_name=req.target_name))
     result = engine.reconcile(source_schema, target_schema)
     return ReconcileResponse(status="complete", result=_apply_min_confidence(result.to_dict(), req.min_confidence))
 
@@ -111,8 +112,10 @@ async def reconcile_files(source_file: str, target_file: str, min_confidence: fl
 
     source_text = source_path.read_text()
     target_text = target_path.read_text()
-    source_schema = _detect_parser(source_text).parse(source_text, schema_name=_strip_ext(source_file))
-    target_schema = _detect_parser(target_text).parse(target_text, schema_name=_strip_ext(target_file))
+    _sp = _detect_parser(source_text)
+    _tp = _detect_parser(target_text)
+    source_schema = get_or_parse(source_text, _sp.__class__.__name__, lambda t: _sp.parse(t, schema_name=_strip_ext(source_file)))
+    target_schema = get_or_parse(target_text, _tp.__class__.__name__, lambda t: _tp.parse(t, schema_name=_strip_ext(target_file)))
     result = engine.reconcile(source_schema, target_schema)
     return ReconcileResponse(status="complete", result=_apply_min_confidence(result.to_dict(), min_confidence))
 
