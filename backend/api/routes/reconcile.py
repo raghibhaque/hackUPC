@@ -393,6 +393,23 @@ async def reconcile_stream_messy(req: MessyDemoRequest = MessyDemoRequest()):
     return StreamingResponse(stream_reconciliation(source, target), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 
+# ── CRM demo (Salesforce legacy → HubSpot modern) ────────────────────────────
+
+def _crm_schemas(req: CRMDemoRequest):
+    if not CRM_LEGACY_SCHEMA.exists() or not CRM_MODERN_SCHEMA.exists():
+        api_error(500, ErrorCode.INTERNAL_ERROR, "CRM demo schema files not found")
+    source = parser.parse(CRM_LEGACY_SCHEMA.read_text(), schema_name=req.source_name)
+    target = parser.parse(CRM_MODERN_SCHEMA.read_text(), schema_name=req.target_name)
+    return source, target
+
+
+@router.post("/crm", response_model=ReconcileResponse, responses=_ERR)
+async def reconcile_crm(req: CRMDemoRequest = CRMDemoRequest()):
+    source, target = _crm_schemas(req)
+    result = engine.reconcile(source, target)
+    return ReconcileResponse(status="complete", result=result.to_dict())
+
+
 @router.post("/stream/files", responses=_ERR)
 async def reconcile_stream_files(source_file: str, target_file: str):
     source_path = UPLOAD_DIR / source_file
