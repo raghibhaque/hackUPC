@@ -329,3 +329,15 @@ async def export_crm_rollback(req: CRMDemoRequest = CRMDemoRequest(), dialect: S
         sql=result.rollback_sql or "-- No rollback generated",
         filename=f"rollback_{r.target_name}_to_{r.source_name}.sql",
     )
+
+
+@router.get("/crm/csv", responses=_ERR)
+async def export_crm_csv(req: CRMDemoRequest = CRMDemoRequest()):
+    """Export Salesforce → HubSpot column mappings as a CSV download."""
+    if not CRM_LEGACY_SCHEMA.exists() or not CRM_MODERN_SCHEMA.exists():
+        api_error(500, ErrorCode.INTERNAL_ERROR, "CRM demo schema files not found")
+    source = parser.parse(CRM_LEGACY_SCHEMA.read_text(), schema_name=req.source_name)
+    target = parser.parse(CRM_MODERN_SCHEMA.read_text(), schema_name=req.target_name)
+    result = engine.reconcile(source, target)
+    return _mappings_to_csv(result, req.source_name, req.target_name,
+                            f"mappings_{req.source_name}_to_{req.target_name}.csv")
