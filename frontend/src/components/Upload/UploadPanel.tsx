@@ -88,6 +88,8 @@ export default function UploadPanel({ onResult }: Props) {
       <ElegantShape delay={0.3} width={260} height={70}  rotate={-7}  gradient="from-indigo-400/[0.1]"  className="left-[8%] bottom-[12%]" />
       <ElegantShape delay={0.5} width={180} height={50}  rotate={22}  gradient="from-rose-400/[0.08]"   className="right-[18%] top-[10%]" />
       <ElegantShape delay={0.6} width={120} height={36}  rotate={-20} gradient="from-cyan-400/[0.08]"   className="left-[28%] top-[6%]" />
+      <ElegantShape delay={0.7} width={200} height={55}  rotate={8}   gradient="from-emerald-400/[0.07]" className="right-[6%] bottom-[28%]" />
+      <ElegantShape delay={0.8} width={150} height={40}  rotate={-15} gradient="from-amber-400/[0.06]"  className="left-[18%] top-[42%]" />
 
       {/* Subtle grid overlay */}
       <div
