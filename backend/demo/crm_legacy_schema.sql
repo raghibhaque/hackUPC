@@ -64,3 +64,28 @@ CREATE TABLE SF_OPPTY (
     KEY idx_ownr   (ownr_id),
     FOREIGN KEY (acct_id) REFERENCES SF_ACCT(acct_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE SF_LD (
+    ld_id       INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fnm         VARCHAR(80)  NOT NULL,
+    lnm         VARCHAR(80)  NOT NULL,
+    cmpny       VARCHAR(200) DEFAULT NULL,
+    eml         VARCHAR(150) DEFAULT NULL,
+    ph          VARCHAR(40)  DEFAULT NULL,
+    ttl         VARCHAR(100) DEFAULT NULL,
+    stat        VARCHAR(50)  NOT NULL DEFAULT 'Open',
+    src         VARCHAR(50)  DEFAULT NULL,
+    rtng        VARCHAR(20)  DEFAULT NULL,
+    is_conv     TINYINT(1)   NOT NULL DEFAULT 0,
+    conv_dt     DATETIME     DEFAULT NULL,
+    conv_acct   INT          DEFAULT NULL,
+    conv_cntct  INT          DEFAULT NULL,
+    conv_oppty  INT          DEFAULT NULL,
+    ownr_id     INT          DEFAULT NULL,
+    is_del      TINYINT(1)   NOT NULL DEFAULT 0,
+    cre_dt      DATETIME     NOT NULL,
+    mod_dt      DATETIME     DEFAULT NULL,
+    KEY idx_eml    (eml),
+    KEY idx_stat   (stat),
+    KEY idx_ownr   (ownr_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
