@@ -433,7 +433,7 @@ The Dockerfile uses a multi-stage build (Python 3.11-slim) with a non-root user 
 | SQL DDL Parsing | ✅ | MySQL, PostgreSQL (`CREATE TABLE` statements) |
 | Prisma Schema Parsing | ✅ | `.prisma` files with full type mapping |
 | JSON Schema Parsing | ✅ | Standard JSON Schema format, flexible table layouts |
-| Live Database Connectors | ✅ | Connect directly to PostgreSQL, MySQL, MongoDB via backend introspection |
+| Live Database Connectors | 🔲 Planned | Frontend UI exists (`DatabaseConnector.tsx`); backend introspection not yet implemented |
 | Structural Analysis | ✅ | Fingerprinting, PK/FK detection, audit column detection |
 | Semantic Matching | ✅ | 14-category synonym dicts, name similarity, optional embeddings |
 | Hungarian Assignment | ✅ | Optimal global bipartite matching for tables & columns |
@@ -536,19 +536,9 @@ Standard JSON Schema definitions with flexible table layouts:
 }
 ```
 
-### 4. Live Database Connection
+### 4. Live Database Connection *(Planned)*
 
-Connect directly to PostgreSQL, MySQL, or MongoDB for live schema introspection:
-
-```
-Host: production-db.example.com
-Port: 5432
-Username: read_user
-Database: analytics
-SSL: Enabled
-```
-
-The frontend sends credentials to the backend for introspection. Credentials are validated before use and never stored.
+A `DatabaseConnector` UI component exists in the frontend, but backend introspection is not yet implemented. When complete, this will allow connecting directly to PostgreSQL, MySQL, or MongoDB to introspect live schemas without file upload.
 
 ---
 
@@ -857,7 +847,7 @@ SchemaSync is a fully functional schema reconciliation platform. Key milestones 
 - SQL DDL (MySQL + PostgreSQL)
 - Prisma `.prisma` files
 - JSON Schema (standard format)
-- Live database introspection (PostgreSQL, MySQL, MongoDB)
+- Live database introspection (planned — frontend UI ready, backend pending)
 
 **Production SQL Generation** ✅
 - 5 export formats: Generic SQL, Flyway, Liquibase, AWS DMS, Rollback
@@ -887,6 +877,7 @@ SchemaSync is a fully functional schema reconciliation platform. Key milestones 
 
 ## Future Work
 
+- **Live database connectors** — Backend introspection for PostgreSQL, MySQL, MongoDB (frontend UI is ready)
 - **LLM-powered transformations** — Use Claude/GPT to suggest data transformations and disambiguate low-confidence mappings
 - **Batch processing** — Reconcile multiple schema pairs in one session
 - **Schema versioning** — Track reconciliation history and schema evolution over time
