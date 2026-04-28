@@ -113,8 +113,8 @@ export default function UploadPanel({ onResult }: Props) {
             {/* Mid ring */}
             <div className="absolute h-16 w-16 rounded-full border border-indigo-500/20 bg-indigo-500/5" />
             {/* Icon */}
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.1] bg-white/[0.04] shadow-[0_0_24px_4px_rgba(99,102,241,0.15)] backdrop-blur-sm">
-              <LogoMark size={36} />
+            <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] shadow-[0_0_24px_4px_rgba(99,102,241,0.15)] backdrop-blur-sm">
+              <LogoMark size={40} />
             </div>
           </div>
           {/* Wordmark */}

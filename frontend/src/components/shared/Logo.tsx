@@ -37,7 +37,7 @@ export function LogoMark({ size = 32, className }: { size?: number; className?: 
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="-1 -1 34 34"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cn('shrink-0', className)}
