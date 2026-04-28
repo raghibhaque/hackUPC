@@ -32,6 +32,7 @@ class Job:
     step: str = "pending"
     result: Optional[dict] = None
     error: Optional[str] = None
+    created_at: float = field(default_factory=time.monotonic)
 
     def __post_init__(self):
         if not self.id:
@@ -46,6 +47,9 @@ class Job:
             "result": self.result,
             "error": self.error,
         }
+
+    def is_expired(self, ttl_seconds: float) -> bool:
+        return (time.monotonic() - self.created_at) > ttl_seconds
 
 
 _jobs: dict[str, Job] = {}
@@ -66,6 +70,28 @@ def update_job(job_id: str, **kwargs) -> None:
     if job:
         for k, v in kwargs.items():
             setattr(job, k, v)
+
+
+JOB_TTL_SECONDS: float = 3600.0  # 1 hour
+
+
+def purge_expired_jobs(ttl_seconds: float = JOB_TTL_SECONDS) -> int:
+    """Remove completed/errored jobs older than ttl_seconds. Returns the number purged."""
+    terminal = {JobStatus.COMPLETE, JobStatus.ERROR}
+    expired = [
+        jid for jid, job in list(_jobs.items())
+        if job.status in terminal and job.is_expired(ttl_seconds)
+    ]
+    for jid in expired:
+        del _jobs[jid]
+    return len(expired)
+
+
+async def periodic_job_cleanup(interval_seconds: float = 300.0) -> None:
+    """Background coroutine that purges expired jobs every interval_seconds."""
+    while True:
+        await asyncio.sleep(interval_seconds)
+        purge_expired_jobs()
 
 
 _POLL_INTERVAL = 0.05   # seconds between queue drains

@@ -4,8 +4,10 @@ SchemaSync Backend — FastAPI application.
 Run with: uvicorn backend.main:app --reload --port 8000
 """
 
+import asyncio
 import logging
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -25,15 +27,29 @@ from backend.api.errors import (
 )
 from backend.config import CORS_ORIGINS, DEBUG, API_V1_PREFIX, MAX_REQUEST_BYTES
 from backend.logging_config import configure_logging
+from backend.services.pipeline import periodic_job_cleanup
 
 configure_logging(debug=DEBUG)
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cleanup_task = asyncio.create_task(periodic_job_cleanup())
+    yield
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+
 
 app = FastAPI(
     title="SchemaSync",
     description="Zero-Config Cross-Product Data Model Reconciliation",
     version="0.1.0",
     debug=DEBUG,
+    lifespan=lifespan,
 )
 
 
