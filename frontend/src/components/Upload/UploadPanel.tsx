@@ -7,6 +7,7 @@ import { apiClient } from '../../lib/api'
 import { showToast } from '../../lib/toast'
 import { ElegantShape } from '../ui/shape-landing-hero'
 import { cn } from '@/lib/utils'
+import { LogoMark } from '../shared/Logo'
 
 type Props = { onResult: (r: ReconciliationResult) => void }
 
@@ -100,17 +101,30 @@ export default function UploadPanel({ onResult }: Props) {
       {/* Content */}
       <div className="relative z-10 w-full max-w-xl px-6 py-16">
 
-        {/* Badge */}
+        {/* Logo mark */}
         <motion.div
           variants={fadeUp(0)} initial="hidden" animate="visible"
-          className="mb-10 flex justify-center"
+          className="mb-10 flex flex-col items-center gap-4"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 backdrop-blur-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-400" />
+          {/* Glow ring + icon */}
+          <div className="relative flex items-center justify-center">
+            {/* Outer glow */}
+            <div className="absolute h-24 w-24 rounded-full bg-indigo-500/10 blur-2xl" />
+            {/* Mid ring */}
+            <div className="absolute h-16 w-16 rounded-full border border-indigo-500/20 bg-indigo-500/5" />
+            {/* Icon */}
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.1] bg-white/[0.04] shadow-[0_0_24px_4px_rgba(99,102,241,0.15)] backdrop-blur-sm">
+              <LogoMark size={36} />
+            </div>
+          </div>
+          {/* Wordmark */}
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold tracking-wide text-white">
+              Schema<span className="bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Sync</span>
             </span>
-            <span className="text-xs font-medium tracking-widest text-white/50 uppercase">SchemaSync</span>
+            <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-indigo-300/80">
+              Beta
+            </span>
           </div>
         </motion.div>
 
