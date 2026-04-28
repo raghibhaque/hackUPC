@@ -7,13 +7,13 @@ from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse, StreamingResponse
 
 from backend.api.errors import ErrorCode, ErrorResponse, api_error, ParseErrorDetail
-from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest
+from backend.api.models.requests import ReconcileRequest, DemoRequest, MessyDemoRequest, CRMDemoRequest
 from backend.api.models.responses import ExportResponse
 from backend.core.codegen.dialects import SQLDialect
 from backend.core.codegen.transform import generate_sqlalchemy, generate_typescript
 from backend.core.parsers.sql_ddl import SQLDDLParser
 from backend.core.reconciliation.engine import ReconciliationEngine
-from backend.config import DEMO_DIR
+from backend.config import DEMO_DIR, CRM_LEGACY_SCHEMA, CRM_MODERN_SCHEMA
 
 router = APIRouter(prefix="/export", tags=["export"])
 parser = SQLDDLParser()
