@@ -149,6 +149,7 @@ export default function UploadPanel({ onResult }: Props) {
           <button
             onClick={handleDemo}
             disabled={isLoading}
+            title="Ghost CMS vs WordPress — 4 tables, 50+ columns, cross-platform CMS mapping"
             className="group relative w-full overflow-hidden rounded-xl border border-indigo-500/30 bg-indigo-600/10 px-5 py-3.5 text-sm font-medium text-indigo-300 backdrop-blur-sm transition-all hover:border-indigo-400/50 hover:bg-indigo-600/20 hover:text-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {activeDemo === 'ghost' ? (
@@ -172,6 +173,7 @@ export default function UploadPanel({ onResult }: Props) {
           <button
             onClick={handleCRMDemo}
             disabled={isLoading}
+            title="Salesforce-style legacy CRM vs HubSpot-style modern CRM — 8 tables, heavily abbreviated names"
             className="group relative w-full overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-600/10 px-5 py-3.5 text-sm font-medium text-emerald-300 backdrop-blur-sm transition-all hover:border-emerald-400/50 hover:bg-emerald-600/20 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {activeDemo === 'crm' ? (
@@ -195,6 +197,7 @@ export default function UploadPanel({ onResult }: Props) {
           <button
             onClick={handleMessyDemo}
             disabled={isLoading}
+            title="Legacy e-commerce with all-caps abbreviated tables vs modern verbose snake_case schema — 8 tables"
             className="group relative w-full overflow-hidden rounded-xl border border-amber-500/30 bg-amber-600/10 px-5 py-3.5 text-sm font-medium text-amber-300 backdrop-blur-sm transition-all hover:border-amber-400/50 hover:bg-amber-600/20 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {activeDemo === 'messy' ? (
