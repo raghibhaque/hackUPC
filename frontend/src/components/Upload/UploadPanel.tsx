@@ -129,7 +129,7 @@ export default function UploadPanel({ onResult }: Props) {
           variants={fadeUp(2)} initial="hidden" animate="visible"
           className="mb-12 text-center text-sm leading-relaxed text-white/40"
         >
-          ML-powered structural + semantic matching. Maps tables and columns across any two SQL schemas in seconds.
+          ML-powered structural + semantic matching. CMS, CRM, e-commerce — maps any two schemas in seconds.
         </motion.p>
 
         {/* Error */}
