@@ -89,3 +89,24 @@ CREATE TABLE SF_LD (
     KEY idx_stat   (stat),
     KEY idx_ownr   (ownr_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE SF_CAMP (
+    camp_id     INT           NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    camp_nm     VARCHAR(200)  NOT NULL,
+    stat        VARCHAR(50)   NOT NULL DEFAULT 'Planned',
+    typ         VARCHAR(50)   DEFAULT NULL,
+    st_dt       DATE          DEFAULT NULL,
+    end_dt      DATE          DEFAULT NULL,
+    bdgt        DECIMAL(15,2) DEFAULT NULL,
+    act_cost    DECIMAL(15,2) DEFAULT NULL,
+    exp_resp    INT           DEFAULT NULL,
+    act_resp    INT           NOT NULL DEFAULT 0,
+    exp_rev     DECIMAL(15,2) DEFAULT NULL,
+    act_rev     DECIMAL(15,2) DEFAULT NULL,
+    is_actv     TINYINT(1)    NOT NULL DEFAULT 1,
+    ownr_id     INT           DEFAULT NULL,
+    cre_dt      DATETIME      NOT NULL,
+    mod_dt      DATETIME      DEFAULT NULL,
+    KEY idx_stat   (stat),
+    KEY idx_typ    (typ)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
