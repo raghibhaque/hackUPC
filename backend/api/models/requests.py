@@ -104,3 +104,17 @@ class MessyDemoRequest(BaseModel):
             ]
         }
     }
+
+
+class CRMDemoRequest(BaseModel):
+    """Use built-in Salesforce-style legacy vs HubSpot-style modern CRM schemas."""
+    source_name: str = "salesforce"
+    target_name: str = "hubspot"
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"summary": "Salesforce legacy vs HubSpot modern CRM", "value": {"source_name": "salesforce", "target_name": "hubspot"}}
+            ]
+        }
+    }
