@@ -64,7 +64,7 @@ export default function UploadPanel({ onResult }: Props) {
   const handleReconcile = () => {
     if (!sourceFile || !targetFile) return
     showToast('Uploading files...', 'info', 2000)
-    run(async () => {
+    run('files', async () => {
       const [a, b] = await Promise.all([
         apiClient.uploadFile(sourceFile),
         apiClient.uploadFile(targetFile),
