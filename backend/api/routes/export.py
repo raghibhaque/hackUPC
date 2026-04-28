@@ -299,3 +299,13 @@ def _crm_result(req: CRMDemoRequest, dialect: SQLDialect):
     source = parser.parse(CRM_LEGACY_SCHEMA.read_text(), schema_name=req.source_name)
     target = parser.parse(CRM_MODERN_SCHEMA.read_text(), schema_name=req.target_name)
     return engine.reconcile(source, target, dialect=dialect), source, target, req
+
+
+@router.get("/crm/sql", response_model=ExportResponse, responses=_ERR)
+async def export_crm_sql(req: CRMDemoRequest = CRMDemoRequest(), dialect: SQLDialect = _DIALECT_Q):
+    """Export Salesforce → HubSpot migration SQL (DROP+CREATE)."""
+    result, _, _, r = _crm_result(req, dialect)
+    return ExportResponse(
+        sql=result.migration_sql or "-- No migration generated",
+        filename=f"migration_{r.source_name}_to_{r.target_name}.sql",
+    )
