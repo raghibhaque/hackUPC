@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { AlertCircle, CheckCircle2, TrendingUp, Zap, Info } from 'lucide-react'
+import { AlertCircle, CheckCircle2, TrendingUp, Zap, Info, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { QuickStats, ComplexityLevel, RiskLevel, ReconciliationResult } from '@/types'
 import { assessDataLossRisk } from '@/lib/statsUtils'
@@ -8,10 +8,23 @@ interface QuickStatsCardProps {
   stats: QuickStats | null
   result?: ReconciliationResult
   compact?: boolean
+  showHelp?: boolean
 }
 
-export function QuickStatsCard({ stats, result, compact = false }: QuickStatsCardProps) {
+const STAT_TOOLTIPS = {
+  match_percentage: 'Percentage of source tables successfully matched to target tables',
+  confidence: 'Average confidence score (0-100%) across all table matches',
+  complexity: 'Migration complexity estimate based on conflicts and unmatched elements',
+  risk_level: 'Overall data loss risk level (Low/Medium/High/Critical)',
+  risk_score: 'Quantified risk score (0-100%) considering all risk factors',
+  unmatched_source: 'Source tables that have no match in the target schema',
+  unmatched_target: 'Target tables that have no match in the source schema',
+  critical_conflicts: 'High-severity conflicts that require resolution before migration',
+}
+
+export function QuickStatsCard({ stats, result, compact = false, showHelp = false }: QuickStatsCardProps) {
   const [showRiskDetails, setShowRiskDetails] = useState(false)
+  const [hoveredStat, setHoveredStat] = useState<string | null>(null)
 
   if (!stats) {
     return (
@@ -63,6 +76,8 @@ export function QuickStatsCard({ stats, result, compact = false }: QuickStatsCar
           value={`${stats.match_percentage}%`}
           subtext={`${stats.total_tables_matched}/${stats.total_tables_source} tables`}
           color="text-blue-400"
+          tooltipKey="match_percentage"
+          showTooltip={showHelp}
         />
 
         <StatBlock
@@ -71,6 +86,8 @@ export function QuickStatsCard({ stats, result, compact = false }: QuickStatsCar
           value={`${(stats.average_confidence * 100).toFixed(0)}%`}
           subtext={`${stats.total_columns_matched} cols matched`}
           color="text-emerald-400"
+          tooltipKey="confidence"
+          showTooltip={showHelp}
         />
 
         <StatBlock
@@ -79,6 +96,8 @@ export function QuickStatsCard({ stats, result, compact = false }: QuickStatsCar
           value={stats.complexity_level}
           subtext={`${stats.total_conflicts} conflicts`}
           color={complexityColor}
+          tooltipKey="complexity"
+          showTooltip={showHelp}
         />
 
         <StatBlock
@@ -87,6 +106,8 @@ export function QuickStatsCard({ stats, result, compact = false }: QuickStatsCar
           value={stats.risk_level}
           subtext={`Score: ${stats.risk_score}%`}
           color={riskColor}
+          tooltipKey="risk_level"
+          showTooltip={showHelp}
         />
       </div>
 
@@ -140,6 +161,8 @@ interface StatBlockProps {
   value: string | number
   subtext?: string
   color?: string
+  tooltipKey?: keyof typeof STAT_TOOLTIPS
+  showTooltip?: boolean
 }
 
 function StatBlock({
@@ -148,16 +171,33 @@ function StatBlock({
   value,
   subtext,
   color = 'text-slate-400',
+  tooltipKey,
+  showTooltip = false,
 }: StatBlockProps) {
+  const [isHovered, setIsHovered] = useState(false)
+  const tooltip = tooltipKey ? STAT_TOOLTIPS[tooltipKey] : null
+
   return (
-    <div className="rounded border border-slate-700/50 bg-slate-800/20 p-3">
+    <div
+      className="relative rounded border border-slate-700/50 bg-slate-800/20 p-3"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className={cn('mb-1 flex items-center gap-1', color)}>
         {icon}
         <span className="text-xs font-medium text-slate-400">{label}</span>
+        {tooltip && showTooltip && (
+          <HelpCircle className="h-3 w-3 opacity-50 hover:opacity-100" />
+        )}
       </div>
       <div className={cn('text-lg font-bold', color)}>{value}</div>
       {subtext && (
         <div className="mt-1 text-xs text-slate-500">{subtext}</div>
+      )}
+      {isHovered && tooltip && (
+        <div className="absolute bottom-full left-0 mb-2 w-48 rounded bg-slate-950 p-2 text-xs text-slate-300 border border-slate-700 shadow-lg z-10">
+          {tooltip}
+        </div>
       )}
     </div>
   )
