@@ -16,6 +16,7 @@ import { useTableStatistics } from '../../hooks/useTableStatistics'
 import { useReviewState } from '../../hooks/useReviewState'
 import { useReviewFilters } from '../../hooks/useReviewFilters'
 import { useReviewHistory } from '../../hooks/useReviewHistory'
+import { useQuickStats } from '../../hooks/useQuickStats'
 import ConfidenceBadge from '../shared/ConfidenceBadge'
 import ProgressDashboard from './ProgressDashboard'
 import PerformanceMetrics from './PerformanceMetrics'
@@ -44,6 +45,7 @@ import ReviewProgressBar from '../Review/ReviewProgressBar'
 import MappingEditor from '../Review/MappingEditor'
 import ConflictIndicator from '../Review/ConflictIndicator'
 import MigrationSummaryCard from './MigrationSummaryCard'
+import { QuickStatsCard } from './QuickStatsCard'
 
 interface Props {
   result: ReconciliationResult
@@ -77,6 +79,9 @@ export default function MappingTable({ result }: Props) {
 
   // Get table statistics
   const tableStats = useTableStatistics(result)
+
+  // Get quick stats for overview card
+  const quickStats = useQuickStats(result)
 
   // Get conflict patterns for batch resolution
   const conflictPatterns = useConflictPatterns(result.table_mappings)
@@ -425,6 +430,7 @@ export default function MappingTable({ result }: Props) {
   return (
     <div className="space-y-6">
       <SchemaSummaryCard result={result} />
+      <QuickStatsCard stats={quickStats} />
       <StatisticsDashboard result={result} />
       <MigrationSummaryCard result={result} />
 
