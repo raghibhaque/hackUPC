@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { CheckCircle2, AlertCircle, Eye } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import type { ReconciliationResult, TableMapping } from '@/types'
 
 interface TableCountSummaryProps {
